@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SiAbsen — Sistem Absensi Digital</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            ink: { DEFAULT: '#0D0D0D', 50: '#F5F5F5', 100: '#E8E8E8', 200: '#D0D0D0', 300: '#A8A8A8', 400: '#6B6B6B', 500: '#3D3D3D', 600: '#2B2B2B', 700: '#1E1E1E', 800: '#141414', 900: '#0D0D0D' },
+            accent: { DEFAULT: '#FF4D00', light: '#FF6B2B', dark: '#CC3D00' },
+            jade: { DEFAULT: '#00C896', light: '#00E5AB', dark: '#009B75' },
+            sky: { DEFAULT: '#0066FF', light: '#3385FF', dark: '#0047CC' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #0D0D0D; color: #E8E8E8; margin: 0; }
+    .font-display { font-family: 'Syne', sans-serif; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #1E1E1E; }
+    ::-webkit-scrollbar-thumb { background: #3D3D3D; border-radius: 2px; }
+
+    /* Sidebar */
+    #sidebar { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1); }
+    #sidebar.collapsed { width: 72px !important; }
+    #sidebar.collapsed .nav-label, #sidebar.collapsed .sidebar-logo-text, #sidebar.collapsed .sidebar-section-title { opacity: 0; pointer-events: none; overflow: hidden; width: 0; }
+    #sidebar.collapsed .nav-item { justify-content: center; padding: 12px; }
+    #sidebar.collapsed .nav-icon { margin: 0; }
+
+    /* Page transitions */
+    .page { display: none; animation: fadeUp 0.35s ease; }
+    .page.active { display: block; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Noise texture overlay */
+    body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E"); pointer-events: none; z-index: 9999; opacity: 0.4; }
+
+    /* Cards */
+    .glass-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(12px); border-radius: 16px; }
+    .stat-card { background: #141414; border: 1px solid #2B2B2B; border-radius: 16px; position: relative; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+    .stat-card:hover { border-color: #FF4D00; transform: translateY(-2px); }
+    .stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 50%; filter: blur(40px); opacity: 0.15; }
+    .stat-card.orange::before { background: #FF4D00; }
+    .stat-card.green::before { background: #00C896; }
+    .stat-card.blue::before { background: #0066FF; }
+    .stat-card.purple::before { background: #9B6AFF; }
+
+    /* Nav items */
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: background 0.2s, color 0.2s; color: #6B6B6B; font-size: 14px; font-weight: 500; text-decoration: none; margin-bottom: 2px; white-space: nowrap; }
+    .nav-item:hover { background: #1E1E1E; color: #E8E8E8; }
+    .nav-item.active { background: #FF4D00; color: #fff; }
+    .nav-item.active svg { color: #fff; }
+    .nav-icon { flex-shrink: 0; width: 20px; height: 20px; }
+
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-family: 'Syne', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B6B6B; padding: 12px 16px; text-align: left; border-bottom: 1px solid #2B2B2B; font-weight: 600; }
+    .data-table td { padding: 14px 16px; border-bottom: 1px solid #1E1E1E; font-size: 14px; color: #A8A8A8; }
+    .data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Buttons */
+    .btn-primary { background: #FF4D00; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.15s; display: inline-flex; align-items: center; gap: 8px; font-family: 'DM Sans'; }
+    .btn-primary:hover { background: #FF6B2B; transform: translateY(-1px); }
+    .btn-secondary { background: #1E1E1E; color: #E8E8E8; border: 1px solid #2B2B2B; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s, border-color 0.2s; display: inline-flex; align-items: center; gap: 8px; font-family: 'DM Sans'; }
+    .btn-secondary:hover { background: #2B2B2B; border-color: #3D3D3D; }
+    .btn-green { background: #00C896; color: #0D0D0D; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: 'DM Sans'; }
+    .btn-green:hover { background: #00E5AB; }
+    .btn-danger { background: rgba(255,59,48,0.1); color: #FF3B30; border: 1px solid rgba(255,59,48,0.2); padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: 'DM Sans'; }
+    .btn-danger:hover { background: rgba(255,59,48,0.2); }
+
+    /* Inputs */
+    .inp { background: #1E1E1E; border: 1px solid #2B2B2B; border-radius: 10px; padding: 10px 14px; color: #E8E8E8; font-size: 14px; font-family: 'DM Sans'; width: 100%; transition: border-color 0.2s; outline: none; }
+    .inp:focus { border-color: #FF4D00; }
+    .inp::placeholder { color: #3D3D3D; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #6B6B6B; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Syne'; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .modal-box { background: #141414; border: 1px solid #2B2B2B; border-radius: 20px; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; padding: 32px; position: relative; animation: modalIn 0.25s ease; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: rgba(0,200,150,0.12); color: #00C896; }
+    .badge-orange { background: rgba(255,77,0,0.12); color: #FF4D00; }
+    .badge-blue { background: rgba(0,102,255,0.12); color: #0066FF; }
+    .badge-red { background: rgba(255,59,48,0.12); color: #FF3B30; }
+    .badge-gray { background: rgba(255,255,255,0.06); color: #A8A8A8; }
+
+    /* RFID pulse */
+    .rfid-pulse { animation: rfidPulse 1.5s infinite; }
+    @keyframes rfidPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,77,0,0.4); } 50% { box-shadow: 0 0 0 16px rgba(255,77,0,0); } }
+
+    /* Progress bar */
+    .progress-bar { background: #2B2B2B; border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+
+    /* Accordion */
+    .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .accordion-content.open { max-height: 2000px; }
+
+    /* Print */
+    @media print {
+      #sidebar, #topbar, .no-print { display: none !important; }
+      #main-content { margin: 0 !important; padding: 20px !important; }
+      body { background: white; color: black; }
+      .glass-card, .stat-card { border: 1px solid #ccc; background: white; }
+    }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- ═══════════════════════════════════════════════════════════ SIDEBAR -->
+<aside id="sidebar" class="w-64 h-screen flex-shrink-0 bg-ink-800 border-r border-ink-700 flex flex-col overflow-hidden z-50" style="transition: width 0.3s cubic-bezier(0.4,0,0.2,1);">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-5 py-5 border-b border-ink-700">
+    <div class="w-9 h-9 rounded-xl bg-accent flex items-center justify-center flex-shrink-0">
+      <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+    </div>
+    <div class="sidebar-logo-text transition-all duration-300">
+      <div class="font-display font-800 text-white text-base leading-tight">SiAbsen</div>
+      <div class="text-ink-400 text-xs">v2.0 Digital</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto px-3 py-4">
+    <div class="sidebar-section-title text-xs font-display font-600 text-ink-500 uppercase tracking-widest mb-2 px-2 transition-all duration-300">Menu Utama</div>
+    <a class="nav-item active" onclick="navigate('dashboard')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a class="nav-item" onclick="navigate('mahasiswa')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="nav-label">Daftar Mahasiswa</span>
+    </a>
+    <a class="nav-item" onclick="navigate('acara')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <span class="nav-label">Acara & Agenda</span>
+    </a>
+    <a class="nav-item" onclick="navigate('absensi')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      <span class="nav-label">Absensi</span>
+    </a>
+
+    <div class="sidebar-section-title text-xs font-display font-600 text-ink-500 uppercase tracking-widest mb-2 px-2 mt-5 transition-all duration-300">Laporan</div>
+    <a class="nav-item" onclick="navigate('laporan')">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span class="nav-label">Laporan & Cetak</span>
+    </a>
+  </nav>
+
+  <!-- Sidebar Footer -->
+  <div class="p-3 border-t border-ink-700">
+    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-ink-700 cursor-pointer transition">
+      <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+        <span class="text-accent font-display font-700 text-sm">A</span>
+      </div>
+      <div class="sidebar-logo-text transition-all duration-300 min-w-0">
+        <div class="text-white text-sm font-600 truncate">Admin</div>
+        <div class="text-ink-400 text-xs truncate">admin@siabsen.id</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════ MAIN WRAPPER -->
+<div class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- TOPBAR -->
+  <header id="topbar" class="h-16 bg-ink-800 border-b border-ink-700 flex items-center justify-between px-6 flex-shrink-0 z-40">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleSidebar()" class="w-9 h-9 rounded-lg bg-ink-700 hover:bg-ink-600 flex items-center justify-center transition">
+        <svg class="w-4 h-4 text-ink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div>
+        <h1 id="page-title" class="font-display text-white font-700 text-lg leading-none">Dashboard</h1>
+        <p id="page-sub" class="text-ink-400 text-xs mt-0.5">Ringkasan sistem absensi</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <!-- Clock -->
+      <div class="text-right hidden sm:block">
+        <div id="clock" class="font-display text-white font-600 text-sm"></div>
+        <div id="datestr" class="text-ink-400 text-xs"></div>
+      </div>
+      <div class="w-px h-8 bg-ink-700"></div>
+      <div class="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center">
+        <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT AREA -->
+  <main id="main-content" class="flex-1 overflow-y-auto bg-ink-900 p-6">
+
+    <!-- ══════════════════════════════ PAGE: DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <!-- Stats Row -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card orange p-5">
+          <div class="text-ink-500 text-xs font-display uppercase tracking-wider mb-3">Total Mahasiswa</div>
+          <div class="font-display text-3xl font-800 text-white mb-1">248</div>
+          <div class="flex items-center gap-1 text-jade text-xs"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>+12 bulan ini</div>
+        </div>
+        <div class="stat-card green p-5">
+          <div class="text-ink-500 text-xs font-display uppercase tracking-wider mb-3">Hadir Hari Ini</div>
+          <div class="font-display text-3xl font-800 text-white mb-1">192</div>
+          <div class="flex items-center gap-1 text-jade text-xs"><span class="text-jade">●</span> 77.4% kehadiran</div>
+        </div>
+        <div class="stat-card blue p-5">
+          <div class="text-ink-500 text-xs font-display uppercase tracking-wider mb-3">Acara Aktif</div>
+          <div class="font-display text-3xl font-800 text-white mb-1">3</div>
+          <div class="flex items-center gap-1 text-sky text-xs"><span>●</span> 8 agenda minggu ini</div>
+        </div>
+        <div class="stat-card purple p-5">
+          <div class="text-ink-500 text-xs font-display uppercase tracking-wider mb-3">Tingkat Hadir</div>
+          <div class="font-display text-3xl font-800 text-white mb-1">84%</div>
+          <div class="progress-bar mt-3"><div class="progress-fill bg-accent" style="width:84%"></div></div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <!-- Bar chart -->
+        <div class="glass-card p-5 lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-display font-700 text-white">Tren Kehadiran</h3>
+              <p class="text-ink-400 text-xs mt-0.5">7 hari terakhir</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="badge badge-green">Hadir</span>
+              <span class="badge badge-red">Absen</span>
+            </div>
+          </div>
+          <canvas id="attendanceChart" height="180"></canvas>
+        </div>
+        <!-- Donut chart -->
+        <div class="glass-card p-5">
+          <div class="mb-4">
+            <h3 class="font-display font-700 text-white">Status Hari Ini</h3>
+            <p class="text-ink-400 text-xs mt-0.5">Distribusi kehadiran</p>
+          </div>
+          <canvas id="statusChart" height="180"></canvas>
+          <div class="mt-4 space-y-2">
+            <div class="flex justify-between text-sm"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-jade inline-block"></span>Hadir</span><span class="text-white font-600">192</span></div>
+            <div class="flex justify-between text-sm"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-accent inline-block"></span>Terlambat</span><span class="text-white font-600">24</span></div>
+            <div class="flex justify-between text-sm"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-ink-500 inline-block"></span>Tidak Hadir</span><span class="text-white font-600">32</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity + Leaderboard -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-700 text-white">Aktivitas Terbaru</h3>
+            <button class="text-xs text-accent hover:underline">Lihat Semua</button>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-ink-800">
+              <div class="w-8 h-8 rounded-full bg-jade/20 flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-jade" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14"/></svg></div>
+              <div class="flex-1 min-w-0"><div class="text-white text-sm font-500 truncate">Ahmad Fauzi masuk</div><div class="text-ink-400 text-xs">Seminar AI — 08:02</div></div>
+              <span class="badge badge-green text-xs">Masuk</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-ink-800">
+              <div class="w-8 h-8 rounded-full bg-sky/20 flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-sky" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16l4-4m0 0l-4-4m4 4H3"/></svg></div>
+              <div class="flex-1 min-w-0"><div class="text-white text-sm font-500 truncate">Siti Rahayu pulang</div><div class="text-ink-400 text-xs">Workshop UI/UX — 16:45</div></div>
+              <span class="badge badge-blue text-xs">Pulang</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-ink-800">
+              <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/></svg></div>
+              <div class="flex-1 min-w-0"><div class="text-white text-sm font-500 truncate">Budi Santoso terlambat</div><div class="text-ink-400 text-xs">Seminar AI — 09:15</div></div>
+              <span class="badge badge-orange text-xs">Terlambat</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-ink-800">
+              <div class="w-8 h-8 rounded-full bg-jade/20 flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-jade" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14"/></svg></div>
+              <div class="flex-1 min-w-0"><div class="text-white text-sm font-500 truncate">Dewi Lestari masuk</div><div class="text-ink-400 text-xs">Rapat Himpunan — 07:55</div></div>
+              <span class="badge badge-green text-xs">Masuk</span>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-700 text-white">Acara Mendatang</h3>
+            <button class="btn-secondary text-xs py-1.5 px-3 no-print" onclick="navigate('acara')">+ Tambah</button>
+          </div>
+          <div class="space-y-3">
+            <div class="p-3 rounded-xl border border-accent/30 bg-accent/5">
+              <div class="flex justify-between items-start mb-1"><span class="text-white text-sm font-600">Seminar Nasional AI</span><span class="badge badge-green text-xs">Aktif</span></div>
+              <div class="text-ink-400 text-xs">6 Jun 2025 · 08:00 – 16:00</div>
+              <div class="text-ink-400 text-xs mt-1">3 agenda · Aula Utama</div>
+            </div>
+            <div class="p-3 rounded-xl border border-ink-700 bg-ink-800">
+              <div class="flex justify-between items-start mb-1"><span class="text-white text-sm font-600">Workshop UI/UX Design</span><span class="badge badge-blue text-xs">Besok</span></div>
+              <div class="text-ink-400 text-xs">7 Jun 2025 · 09:00 – 15:00</div>
+              <div class="text-ink-400 text-xs mt-1">2 agenda · Lab Komputer 2</div>
+            </div>
+            <div class="p-3 rounded-xl border border-ink-700 bg-ink-800">
+              <div class="flex justify-between items-start mb-1"><span class="text-white text-sm font-600">Rapat Himpunan Mahasiswa</span><span class="badge badge-gray text-xs">3 Hari</span></div>
+              <div class="text-ink-400 text-xs">9 Jun 2025 · 13:00 – 17:00</div>
+              <div class="text-ink-400 text-xs mt-1">1 agenda · Ruang Rapat</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ PAGE: MAHASISWA -->
+    <div id="page-mahasiswa" class="page">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div class="flex gap-2 flex-1">
+          <input type="text" class="inp max-w-xs" placeholder="Cari nama / RFID / email..." oninput="filterTable(this.value)">
+          <select class="inp max-w-40">
+            <option value="">Semua Jabatan</option>
+            <option>Ketua</option>
+            <option>Anggota</option>
+            <option>Bendahara</option>
+            <option>Sekretaris</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-secondary no-print" onclick="printSection('mahasiswa-table')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Cetak</button>
+          <button class="btn-primary" onclick="showModal('modal-tambah-mahasiswa')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Tambah Mahasiswa</button>
+        </div>
+      </div>
+
+      <div id="mahasiswa-table" class="glass-card overflow-hidden">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mahasiswa</th>
+              <th>RFID</th>
+              <th>Email</th>
+              <th>Jabatan</th>
+              <th>Status</th>
+              <th class="no-print">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="mahasiswa-tbody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ PAGE: ACARA -->
+    <div id="page-acara" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex gap-2">
+          <button class="btn-secondary no-print" onclick="printSection('acara-list')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Cetak</button>
+          <button class="btn-primary" onclick="showModal('modal-tambah-acara')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Tambah Acara</button>
+        </div>
+      </div>
+      <div id="acara-list" class="space-y-4">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ PAGE: ABSENSI -->
+    <div id="page-absensi" class="page">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- RFID Scanner Panel -->
+        <div class="lg:col-span-1">
+          <div class="glass-card p-6 text-center mb-4">
+            <div class="font-display font-700 text-white mb-4">Scanner RFID</div>
+            <div class="w-24 h-24 rounded-full border-2 border-accent mx-auto flex items-center justify-center rfid-pulse mb-4 relative">
+              <svg class="w-10 h-10 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+            </div>
+            <div id="rfid-status" class="text-ink-400 text-sm mb-4">Tempelkan kartu RFID...</div>
+            <input type="text" id="rfid-input" class="inp text-center text-lg font-display font-700 tracking-widest mb-3" placeholder="atau ketik RFID" maxlength="16">
+            <select class="inp mb-3" id="absen-agenda">
+              <option value="">Pilih Agenda</option>
+              <option value="1">Seminar AI — Sesi Pagi</option>
+              <option value="2">Seminar AI — Sesi Siang</option>
+              <option value="3">Workshop UI/UX</option>
+            </select>
+            <div class="flex gap-2">
+              <button class="btn-green flex-1" onclick="processAbsensi('masuk')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14"/></svg>Absen Masuk</button>
+              <button class="btn-secondary flex-1" onclick="processAbsensi('pulang')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16l4-4m0 0l-4-4m4 4H3"/></svg>Pulang</button>
+            </div>
+            <div id="absen-result" class="mt-3 hidden"></div>
+          </div>
+
+          <!-- Batas waktu -->
+          <div class="glass-card p-4">
+            <div class="text-xs font-display font-600 uppercase tracking-wider text-ink-500 mb-3">Batas Waktu Absen</div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm"><span class="text-ink-300">Absen Masuk</span><span class="text-white font-600">08:00 – 09:00</span></div>
+              <div class="flex justify-between text-sm"><span class="text-ink-300">Batas Terlambat</span><span class="text-accent font-600">09:01 – 09:30</span></div>
+              <div class="flex justify-between text-sm"><span class="text-ink-300">Absen Pulang</span><span class="text-white font-600">15:00 – 17:00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log Absensi -->
+        <div class="lg:col-span-2">
+          <div class="glass-card overflow-hidden">
+            <div class="flex items-center justify-between p-5 border-b border-ink-700">
+              <h3 class="font-display font-700 text-white">Log Absensi Hari Ini</h3>
+              <button class="btn-secondary text-xs py-1.5 px-3 no-print" onclick="printSection('absensi-log')"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Cetak</button>
+            </div>
+            <div id="absensi-log">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Mahasiswa</th>
+                    <th>Agenda</th>
+                    <th>Jam Masuk</th>
+                    <th>Jam Pulang</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="absensi-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ PAGE: LAPORAN -->
+    <div id="page-laporan" class="page">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div class="glass-card p-5">
+          <div class="text-xs font-display uppercase tracking-wider text-ink-500 mb-2">Filter Laporan</div>
+          <div class="space-y-3">
+            <div><label>Periode</label><select class="inp"><option>Hari Ini</option><option>Minggu Ini</option><option>Bulan Ini</option><option>Custom</option></select></div>
+            <div><label>Acara</label><select class="inp"><option>Semua Acara</option><option>Seminar AI</option><option>Workshop UI/UX</option></select></div>
+            <div><label>Status</label><select class="inp"><option>Semua Status</option><option>Hadir</option><option>Terlambat</option><option>Tidak Hadir</option></select></div>
+            <button class="btn-primary w-full justify-center">Tampilkan</button>
+          </div>
+        </div>
+        <div class="lg:col-span-2 glass-card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-700 text-white">Ringkasan Laporan</h3>
+            <div class="flex gap-2">
+              <button class="btn-secondary text-xs py-1.5 px-3" onclick="printSection('laporan-content')"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Cetak PDF</button>
+              <button class="btn-green text-xs py-1.5 px-3"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Export Excel</button>
+            </div>
+          </div>
+          <div id="laporan-content" class="grid grid-cols-2 gap-3">
+            <div class="bg-ink-800 rounded-xl p-4 text-center"><div class="font-display text-2xl font-800 text-white">248</div><div class="text-ink-400 text-xs mt-1">Total Mahasiswa</div></div>
+            <div class="bg-ink-800 rounded-xl p-4 text-center"><div class="font-display text-2xl font-800 text-jade">84%</div><div class="text-ink-400 text-xs mt-1">Rata-rata Hadir</div></div>
+            <div class="bg-ink-800 rounded-xl p-4 text-center"><div class="font-display text-2xl font-800 text-accent">32</div><div class="text-ink-400 text-xs mt-1">Tidak Hadir</div></div>
+            <div class="bg-ink-800 rounded-xl p-4 text-center"><div class="font-display text-2xl font-800 text-sky">12</div><div class="text-ink-400 text-xs mt-1">Acara Selesai</div></div>
+          </div>
+          <canvas id="laporanChart" class="mt-4" height="120"></canvas>
+        </div>
+      </div>
+
+      <!-- Laporan Detail Table -->
+      <div class="glass-card overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-ink-700">
+          <h3 class="font-display font-700 text-white">Detail Kehadiran Per Mahasiswa</h3>
+          <button class="btn-secondary text-xs py-1.5 px-3 no-print" onclick="window.print()"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Cetak Semua</button>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>No</th><th>Nama Mahasiswa</th><th>Total Acara</th><th>Hadir</th><th>Terlambat</th><th>Tidak Hadir</th><th>Persentase</th></tr></thead>
+          <tbody>
+            <tr><td class="text-ink-500">1</td><td class="text-white font-500">Ahmad Fauzi</td><td>12</td><td class="text-jade">11</td><td class="text-accent">1</td><td class="text-red-400">0</td><td><div class="flex items-center gap-2"><div class="progress-bar flex-1 w-20"><div class="progress-fill bg-jade" style="width:91%"></div></div><span class="text-white text-xs w-8">91%</span></div></td></tr>
+            <tr><td class="text-ink-500">2</td><td class="text-white font-500">Siti Rahayu</td><td>12</td><td class="text-jade">10</td><td class="text-accent">2</td><td class="text-red-400">0</td><td><div class="flex items-center gap-2"><div class="progress-bar flex-1 w-20"><div class="progress-fill bg-jade" style="width:83%"></div></div><span class="text-white text-xs w-8">83%</span></div></td></tr>
+            <tr><td class="text-ink-500">3</td><td class="text-white font-500">Budi Santoso</td><td>12</td><td class="text-jade">8</td><td class="text-accent">3</td><td class="text-red-400">1</td><td><div class="flex items-center gap-2"><div class="progress-bar flex-1 w-20"><div class="progress-fill bg-accent" style="width:66%"></div></div><span class="text-white text-xs w-8">66%</span></div></td></tr>
+            <tr><td class="text-ink-500">4</td><td class="text-white font-500">Dewi Lestari</td><td>12</td><td class="text-jade">12</td><td class="text-accent">0</td><td class="text-red-400">0</td><td><div class="flex items-center gap-2"><div class="progress-bar flex-1 w-20"><div class="progress-fill bg-jade" style="width:100%"></div></div><span class="text-white text-xs w-8">100%</span></div></td></tr>
+            <tr><td class="text-ink-500">5</td><td class="text-white font-500">Rudi Hermawan</td><td>12</td><td class="text-jade">9</td><td class="text-accent">1</td><td class="text-red-400">2</td><td><div class="flex items-center gap-2"><div class="progress-bar flex-1 w-20"><div class="progress-fill bg-accent" style="width:75%"></div></div><span class="text-white text-xs w-8">75%</span></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="h-10 bg-ink-800 border-t border-ink-700 flex items-center justify-between px-6 flex-shrink-0">
+    <span class="text-ink-500 text-xs">© 2025 SiAbsen · Sistem Absensi Digital</span>
+    <span class="text-ink-500 text-xs">v2.0.0 · Build 20250606</span>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ MODALS -->
+
+<!-- Modal Tambah Mahasiswa -->
+<div id="modal-tambah-mahasiswa" class="modal-overlay hidden" onclick="closeModal(event, 'modal-tambah-mahasiswa')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <div><h2 class="font-display font-800 text-white text-xl">Tambah Mahasiswa</h2><p class="text-ink-400 text-sm mt-0.5">Daftarkan mahasiswa baru dengan RFID</p></div>
+      <button onclick="closeModal(null,'modal-tambah-mahasiswa')" class="w-8 h-8 rounded-lg bg-ink-700 hover:bg-ink-600 flex items-center justify-center text-ink-400 hover:text-white transition">✕</button>
+    </div>
+
+    <!-- RFID Scan -->
+    <div class="bg-ink-800 border border-dashed border-ink-600 rounded-xl p-4 mb-5 text-center relative overflow-hidden">
+      <div class="absolute inset-0 flex items-center justify-center opacity-5"><div class="w-48 h-48 border-2 border-accent rounded-full"></div></div>
+      <div class="w-12 h-12 rounded-full border-2 border-accent mx-auto flex items-center justify-center rfid-pulse mb-2">
+        <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+      </div>
+      <p class="text-ink-400 text-sm mb-2">Tempelkan kartu RFID untuk scan otomatis</p>
+      <div class="flex gap-2 items-center max-w-xs mx-auto">
+        <input type="text" id="rfid-new" class="inp text-center font-display font-700 tracking-widest text-sm flex-1" placeholder="RFID ID" maxlength="16">
+        <button class="btn-primary py-2 px-3 text-sm" onclick="simulateRFID()">Scan</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="col-span-2"><label>Nama Lengkap</label><input type="text" class="inp" placeholder="Masukkan nama lengkap"></div>
+      <div><label>Email</label><input type="email" class="inp" placeholder="email@kampus.ac.id"></div>
+      <div><label>Jabatan</label>
+        <select class="inp">
+          <option value="">Pilih Jabatan</option>
+          <option>Ketua</option>
+          <option>Wakil Ketua</option>
+          <option>Sekretaris</option>
+          <option>Bendahara</option>
+          <option>Anggota</option>
+        </select>
+      </div>
+      <div class="col-span-2">
+        <label>Foto Mahasiswa</label>
+        <div class="border border-dashed border-ink-600 rounded-xl p-6 text-center cursor-pointer hover:border-accent transition bg-ink-800" onclick="document.getElementById('foto-input').click()">
+          <div id="foto-preview" class="hidden mb-3"><img id="foto-img" class="w-20 h-20 rounded-full object-cover mx-auto border-2 border-accent"></div>
+          <svg class="w-8 h-8 text-ink-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <p class="text-ink-400 text-sm">Klik untuk upload foto</p>
+          <p class="text-ink-600 text-xs mt-1">PNG, JPG max 2MB</p>
+          <input type="file" id="foto-input" class="hidden" accept="image/*" onchange="previewFoto(this)">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button class="btn-secondary flex-1 justify-center" onclick="closeModal(null,'modal-tambah-mahasiswa')">Batal</button>
+      <button class="btn-primary flex-1 justify-center" onclick="saveMahasiswa()">Simpan Mahasiswa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Tambah Acara -->
+<div id="modal-tambah-acara" class="modal-overlay hidden" onclick="closeModal(event, 'modal-tambah-acara')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <div><h2 class="font-display font-800 text-white text-xl">Tambah Acara</h2><p class="text-ink-400 text-sm mt-0.5">Buat acara baru dengan agenda</p></div>
+      <button onclick="closeModal(null,'modal-tambah-acara')" class="w-8 h-8 rounded-lg bg-ink-700 hover:bg-ink-600 flex items-center justify-center text-ink-400 hover:text-white transition">✕</button>
+    </div>
+    <div class="space-y-4">
+      <div><label>Nama Acara</label><input type="text" class="inp" placeholder="Contoh: Seminar Nasional AI 2025"></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label>Tanggal Mulai</label><input type="date" class="inp"></div>
+        <div><label>Tanggal Selesai</label><input type="date" class="inp"></div>
+      </div>
+      <div><label>Lokasi</label><input type="text" class="inp" placeholder="Nama ruangan / tempat"></div>
+      <div><label>Deskripsi</label><textarea class="inp h-20 resize-none" placeholder="Deskripsi singkat acara"></textarea></div>
+
+      <!-- Agenda Generator -->
+      <div class="border border-ink-600 rounded-xl p-4 bg-ink-800">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm font-display font-600 text-white">Agenda Acara</div>
+          <button class="btn-green text-xs py-1.5 px-3" onclick="addAgendaRow()"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>+ Agenda</button>
+        </div>
+        <div id="agenda-rows" class="space-y-2">
+          <div class="agenda-row grid grid-cols-12 gap-2 items-center">
+            <input type="text" class="inp col-span-5 text-sm py-2" placeholder="Nama agenda">
+            <input type="time" class="inp col-span-3 text-sm py-2">
+            <input type="time" class="inp col-span-3 text-sm py-2">
+            <button class="col-span-1 text-red-400 hover:text-red-300 flex items-center justify-center" onclick="removeAgenda(this)"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <div class="text-xs text-ink-500 col-span-5">Nama Agenda</div>
+          <div class="text-xs text-ink-500 col-span-3">Jam Mulai</div>
+          <div class="text-xs text-ink-500 col-span-3">Jam Selesai</div>
+        </div>
+        <button class="btn-secondary w-full justify-center mt-3 text-sm py-2" onclick="generateAgenda()"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Generate Agenda Otomatis</button>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button class="btn-secondary flex-1 justify-center" onclick="closeModal(null,'modal-tambah-acara')">Batal</button>
+      <button class="btn-primary flex-1 justify-center" onclick="saveAcara()">Simpan Acara</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detail Acara / Agenda -->
+<div id="modal-detail-acara" class="modal-overlay hidden" onclick="closeModal(event,'modal-detail-acara')">
+  <div class="modal-box max-w-2xl" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <div><h2 id="detail-acara-title" class="font-display font-800 text-white text-xl">Detail Acara</h2><p id="detail-acara-sub" class="text-ink-400 text-sm mt-0.5"></p></div>
+      <button onclick="closeModal(null,'modal-detail-acara')" class="w-8 h-8 rounded-lg bg-ink-700 hover:bg-ink-600 flex items-center justify-center text-ink-400 hover:text-white transition">✕</button>
+    </div>
+    <div id="detail-agenda-list" class="space-y-3"></div>
+    <div class="mt-4 pt-4 border-t border-ink-700 flex gap-2">
+      <button class="btn-primary" onclick="closeModal(null,'modal-detail-acara');navigate('absensi')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>Buka Absensi</button>
+      <button class="btn-secondary" onclick="printSection('detail-agenda-list')"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Cetak</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-[9999] transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+  <div id="toast-inner" class="flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-sm font-500 bg-jade text-ink-900"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════ DATA
+const mahasiswaData = [
+  { id: 1, rfid: 'A1B2C3D4', nama: 'Ahmad Fauzi', email: 'ahmad@kampus.ac.id', jabatan: 'Ketua', foto: '', status: 'aktif' },
+  { id: 2, rfid: 'E5F6G7H8', nama: 'Siti Rahayu', email: 'siti@kampus.ac.id', jabatan: 'Sekretaris', foto: '', status: 'aktif' },
+  { id: 3, rfid: 'I9J0K1L2', nama: 'Budi Santoso', email: 'budi@kampus.ac.id', jabatan: 'Anggota', foto: '', status: 'aktif' },
+  { id: 4, rfid: 'M3N4O5P6', nama: 'Dewi Lestari', email: 'dewi@kampus.ac.id', jabatan: 'Bendahara', foto: '', status: 'aktif' },
+  { id: 5, rfid: 'Q7R8S9T0', nama: 'Rudi Hermawan', email: 'rudi@kampus.ac.id', jabatan: 'Anggota', foto: '', status: 'nonaktif' },
+];
+
+const acaraData = [
+  { id: 1, nama: 'Seminar Nasional AI 2025', tanggalMulai: '2025-06-06', tanggalSelesai: '2025-06-06', lokasi: 'Aula Utama', deskripsi: 'Seminar tentang perkembangan AI di Indonesia', status: 'aktif',
+    agenda: [
+      { id: 1, nama: 'Pembukaan & Registrasi', mulai: '07:30', selesai: '08:00', batasAbsen: '08:15' },
+      { id: 2, nama: 'Sesi I: AI Fundamentals', mulai: '08:00', selesai: '10:00', batasAbsen: '08:30' },
+      { id: 3, nama: 'Sesi II: Applied AI', mulai: '13:00', selesai: '15:00', batasAbsen: '13:30' },
+    ]
+  },
+  { id: 2, nama: 'Workshop UI/UX Design', tanggalMulai: '2025-06-07', tanggalSelesai: '2025-06-07', lokasi: 'Lab Komputer 2', deskripsi: 'Workshop praktis desain antarmuka', status: 'upcoming',
+    agenda: [
+      { id: 4, nama: 'Materi Figma Dasar', mulai: '09:00', selesai: '11:00', batasAbsen: '09:20' },
+      { id: 5, nama: 'Praktik Desain', mulai: '13:00', selesai: '15:00', batasAbsen: '13:15' },
+    ]
+  },
+  { id: 3, nama: 'Rapat Himpunan Mahasiswa', tanggalMulai: '2025-06-09', tanggalSelesai: '2025-06-09', lokasi: 'Ruang Rapat', deskripsi: 'Rapat koordinasi bulanan', status: 'upcoming',
+    agenda: [{ id: 6, nama: 'Rapat Pleno', mulai: '13:00', selesai: '17:00', batasAbsen: '13:30' }]
+  },
+];
+
+const absensiLog = [
+  { mahasiswa: 'Ahmad Fauzi', agenda: 'Seminar AI — Sesi I', masuk: '07:58', pulang: '10:05', status: 'hadir' },
+  { mahasiswa: 'Siti Rahayu', agenda: 'Seminar AI — Sesi I', masuk: '08:02', pulang: '10:00', status: 'hadir' },
+  { mahasiswa: 'Budi Santoso', agenda: 'Seminar AI — Sesi I', masuk: '09:15', pulang: '10:08', status: 'terlambat' },
+  { mahasiswa: 'Dewi Lestari', agenda: 'Seminar AI — Sesi I', masuk: '07:55', pulang: '10:02', status: 'hadir' },
+  { mahasiswa: 'Rudi Hermawan', agenda: 'Seminar AI — Sesi I', masuk: '-', pulang: '-', status: 'tidak-hadir' },
+];
+
+// ═══════════════════════════════════════════════ INIT
+window.onload = () => {
+  startClock();
+  renderMahasiswaTable(mahasiswaData);
+  renderAcaraList();
+  renderAbsensiLog();
+  initCharts();
+};
+
+// ═══════════════════════════════════════════════ NAVIGATION
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`[onclick="navigate('${page}')"]`).classList.add('active');
+  const titles = { dashboard: ['Dashboard', 'Ringkasan sistem absensi'], mahasiswa: ['Daftar Mahasiswa', 'Manajemen data mahasiswa'], acara: ['Acara & Agenda', 'Kelola acara dan agenda'], absensi: ['Absensi', 'Proses absensi dengan RFID'], laporan: ['Laporan & Cetak', 'Rekap dan export data'] };
+  document.getElementById('page-title').textContent = titles[page][0];
+  document.getElementById('page-sub').textContent = titles[page][1];
+  if (page === 'laporan') setTimeout(initLaporanChart, 100);
+}
+
+// ═══════════════════════════════════════════════ SIDEBAR
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ═══════════════════════════════════════════════ CLOCK
+function startClock() {
+  const update = () => {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('datestr').textContent = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  };
+  update(); setInterval(update, 1000);
+}
+
+// ═══════════════════════════════════════════════ MAHASISWA TABLE
+function renderMahasiswaTable(data) {
+  const tbody = document.getElementById('mahasiswa-tbody');
+  tbody.innerHTML = data.map(m => `
+    <tr>
+      <td>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-display font-700 text-sm">${m.foto ? `<img src="${m.foto}" class="w-9 h-9 rounded-full object-cover">` : m.nama.charAt(0)}</div>
+          <div><div class="text-white font-500 text-sm">${m.nama}</div></div>
+        </div>
+      </td>
+      <td><code class="text-xs font-display text-accent bg-accent/10 px-2 py-1 rounded-lg">${m.rfid}</code></td>
+      <td>${m.email}</td>
+      <td><span class="badge ${m.jabatan === 'Ketua' ? 'badge-orange' : 'badge-gray'}">${m.jabatan}</span></td>
+      <td><span class="badge ${m.status === 'aktif' ? 'badge-green' : 'badge-gray'}">${m.status}</span></td>
+      <td class="no-print">
+        <div class="flex gap-2">
+          <button class="btn-secondary py-1.5 px-3 text-xs" onclick="editMahasiswa(${m.id})">Edit</button>
+          <button class="btn-danger py-1.5 px-3 text-xs" onclick="hapusMahasiswa(${m.id})">Hapus</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function filterTable(q) {
+  const filtered = mahasiswaData.filter(m => m.nama.toLowerCase().includes(q.toLowerCase()) || m.rfid.toLowerCase().includes(q.toLowerCase()) || m.email.toLowerCase().includes(q.toLowerCase()));
+  renderMahasiswaTable(filtered);
+}
+
+function saveMahasiswa() {
+  const rfid = document.getElementById('rfid-new').value || 'RF' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  showToast('✓ Mahasiswa berhasil ditambahkan!', 'jade');
+  closeModal(null, 'modal-tambah-mahasiswa');
+}
+
+function editMahasiswa(id) { showToast('✏️ Mode edit mahasiswa #' + id, 'sky'); }
+function hapusMahasiswa(id) { showToast('🗑️ Mahasiswa dihapus', 'red'); }
+
+function simulateRFID() {
+  const chars = 'ABCDEF0123456789';
+  let rfid = '';
+  for (let i = 0; i < 8; i++) rfid += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('rfid-new').value = rfid;
+  showToast('📡 RFID terdeteksi: ' + rfid, 'jade');
+}
+
+function previewFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('foto-img').src = e.target.result;
+    document.getElementById('foto-preview').classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════ ACARA
+function renderAcaraList() {
+  const container = document.getElementById('acara-list');
+  container.innerHTML = acaraData.map(a => {
+    const statusClass = { aktif: 'badge-green', upcoming: 'badge-blue', selesai: 'badge-gray' }[a.status] || 'badge-gray';
+    return `
+    <div class="glass-card overflow-hidden">
+      <div class="p-5 cursor-pointer" onclick="toggleAccordion('acara-${a.id}')">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-1">
+              <h3 class="font-display font-700 text-white text-base">${a.nama}</h3>
+              <span class="badge ${statusClass} text-xs">${a.status}</span>
+            </div>
+            <div class="flex flex-wrap gap-4 text-sm text-ink-400">
+              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${formatDate(a.tanggalMulai)}</span>
+              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${a.lokasi}</span>
+              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>${a.agenda.length} agenda</span>
+            </div>
+          </div>
+          <div class="flex gap-2 flex-shrink-0 no-print">
+            <button class="btn-green text-xs py-1.5 px-3" onclick="event.stopPropagation();openDetailAcara(${a.id})">Detail</button>
+            <button class="btn-secondary text-xs py-1.5 px-3" onclick="event.stopPropagation();showModal('modal-tambah-acara')">Edit</button>
+            <svg class="w-5 h-5 text-ink-500 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+        </div>
+      </div>
+      <div id="acara-${a.id}" class="accordion-content">
+        <div class="px-5 pb-5 pt-0 border-t border-ink-700">
+          <p class="text-ink-400 text-sm mb-4 mt-4">${a.deskripsi}</p>
+          <div class="text-xs font-display font-600 uppercase tracking-wider text-ink-500 mb-3">Agenda</div>
+          <div class="space-y-2">
+            ${a.agenda.map(ag => `
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-ink-800">
+                <div class="w-2 h-2 rounded-full bg-accent flex-shrink-0"></div>
+                <div class="flex-1"><div class="text-white text-sm font-500">${ag.nama}</div><div class="text-ink-400 text-xs">${ag.mulai} – ${ag.selesai} · Batas absen: ${ag.batasAbsen}</div></div>
+                <button class="btn-primary text-xs py-1.5 px-3" onclick="navigate('absensi')">Absensi</button>
+              </div>`).join('')}
+          </div>
+          <button class="btn-secondary mt-3 text-xs py-2 px-4" onclick="addAgendaToAcara(${a.id})"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Tambah Agenda</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAccordion(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function openDetailAcara(id) {
+  const a = acaraData.find(x => x.id === id);
+  document.getElementById('detail-acara-title').textContent = a.nama;
+  document.getElementById('detail-acara-sub').textContent = formatDate(a.tanggalMulai) + ' · ' + a.lokasi;
+  document.getElementById('detail-agenda-list').innerHTML = a.agenda.map(ag => `
+    <div class="flex items-center justify-between p-4 rounded-xl bg-ink-800 border border-ink-700">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+          <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+        </div>
+        <div><div class="text-white font-600 text-sm">${ag.nama}</div><div class="text-ink-400 text-xs">${ag.mulai} – ${ag.selesai} · Batas: ${ag.batasAbsen}</div></div>
+      </div>
+      <button class="btn-green text-xs py-1.5 px-3" onclick="closeModal(null,'modal-detail-acara');navigate('absensi')">Absensi</button>
+    </div>`).join('');
+  showModal('modal-detail-acara');
+}
+
+function saveAcara() {
+  showToast('✓ Acara berhasil disimpan!', 'jade');
+  closeModal(null, 'modal-tambah-acara');
+}
+
+function addAgendaRow() {
+  const row = document.createElement('div');
+  row.className = 'agenda-row grid grid-cols-12 gap-2 items-center';
+  row.innerHTML = `<input type="text" class="inp col-span-5 text-sm py-2" placeholder="Nama agenda"><input type="time" class="inp col-span-3 text-sm py-2"><input type="time" class="inp col-span-3 text-sm py-2"><button class="col-span-1 text-red-400 hover:text-red-300 flex items-center justify-center" onclick="removeAgenda(this)"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
+  document.getElementById('agenda-rows').appendChild(row);
+}
+
+function removeAgenda(btn) { btn.closest('.agenda-row').remove(); }
+
+function generateAgenda() {
+  const templates = [['Pembukaan & Registrasi','07:30','08:00'],['Sesi Materi I','08:00','10:00'],['Istirahat','10:00','10:30'],['Sesi Materi II','10:30','12:00'],['Ishoma','12:00','13:00'],['Sesi Materi III','13:00','15:00'],['Penutupan','15:00','15:30']];
+  const container = document.getElementById('agenda-rows');
+  container.innerHTML = '';
+  templates.forEach(([nama, mulai, selesai]) => {
+    const row = document.createElement('div');
+    row.className = 'agenda-row grid grid-cols-12 gap-2 items-center';
+    row.innerHTML = `<input type="text" class="inp col-span-5 text-sm py-2" value="${nama}"><input type="time" class="inp col-span-3 text-sm py-2" value="${mulai}"><input type="time" class="inp col-span-3 text-sm py-2" value="${selesai}"><button class="col-span-1 text-red-400 hover:text-red-300 flex items-center justify-center" onclick="removeAgenda(this)"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
+    container.appendChild(row);
+  });
+  showToast('⚡ 7 agenda berhasil di-generate!', 'jade');
+}
+
+function addAgendaToAcara(id) { showToast('+ Tambah agenda ke acara #' + id, 'sky'); }
+
+// ═══════════════════════════════════════════════ ABSENSI
+function renderAbsensiLog() {
+  const tbody = document.getElementById('absensi-tbody');
+  tbody.innerHTML = absensiLog.map(a => {
+    const statusMap = { hadir: 'badge-green', terlambat: 'badge-orange', 'tidak-hadir': 'badge-red' };
+    const statusLabel = { hadir: 'Hadir', terlambat: 'Terlambat', 'tidak-hadir': 'Tidak Hadir' };
+    return `<tr><td class="text-white font-500">${a.mahasiswa}</td><td>${a.agenda}</td><td class="${a.masuk !== '-' ? 'text-jade' : 'text-ink-500'}">${a.masuk}</td><td class="${a.pulang !== '-' ? 'text-sky' : 'text-ink-500'}">${a.pulang}</td><td><span class="badge ${statusMap[a.status]}">${statusLabel[a.status]}</span></td></tr>`;
+  }).join('');
+}
+
+function processAbsensi(type) {
+  const rfid = document.getElementById('rfid-input').value;
+  const agenda = document.getElementById('absen-agenda').value;
+  if (!rfid) { showToast('⚠️ Tempelkan atau masukkan RFID', 'orange'); return; }
+  if (!agenda) { showToast('⚠️ Pilih agenda terlebih dahulu', 'orange'); return; }
+  const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const result = document.getElementById('absen-result');
+  result.className = 'mt-3 p-3 rounded-xl text-sm text-center';
+  if (type === 'masuk') {
+    result.className += ' bg-jade/10 text-jade border border-jade/20';
+    result.innerHTML = `✓ Absen masuk berhasil · ${now}`;
+    showToast('✓ Absen masuk tercatat: ' + rfid, 'jade');
+  } else {
+    result.className += ' bg-sky/10 text-sky border border-sky/20';
+    result.innerHTML = `✓ Absen pulang berhasil · ${now}`;
+    showToast('✓ Absen pulang tercatat: ' + rfid, 'sky');
+  }
+  result.classList.remove('hidden');
+  document.getElementById('rfid-input').value = '';
+}
+
+// ═══════════════════════════════════════════════ CHARTS
+function initCharts() {
+  const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  const hadir = [210, 195, 220, 205, 192, 180, 215];
+  const absen = [38, 53, 28, 43, 56, 68, 33];
+
+  new Chart(document.getElementById('attendanceChart'), {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'Hadir', data: hadir, backgroundColor: 'rgba(0,200,150,0.7)', borderRadius: 6 },
+        { label: 'Absen', data: absen, backgroundColor: 'rgba(255,77,0,0.5)', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6B6B6B', font: { family: 'Syne', size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6B6B6B', font: { family: 'Syne', size: 11 } } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Hadir', 'Terlambat', 'Tidak Hadir'],
+      datasets: [{ data: [192, 24, 32], backgroundColor: ['#00C896', '#FF4D00', '#3D3D3D'], borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '72%',
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function initLaporanChart() {
+  const ctx = document.getElementById('laporanChart');
+  if (!ctx || ctx._chartDestroyed) return;
+  if (ctx._chart) { ctx._chart.destroy(); }
+  const c = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+      datasets: [{ label: 'Kehadiran (%)', data: [78, 82, 79, 85, 88, 84], borderColor: '#FF4D00', backgroundColor: 'rgba(255,77,0,0.08)', tension: 0.4, pointBackgroundColor: '#FF4D00', fill: true, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6B6B6B', font: { family: 'Syne', size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6B6B6B', font: { family: 'Syne', size: 11 } }, min: 60, max: 100 }
+      }
+    }
+  });
+  ctx._chart = c;
+}
+
+// ═══════════════════════════════════════════════ MODAL
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(event, id) {
+  if (!event || event.target === document.getElementById(id)) document.getElementById(id).classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════ TOAST
+let toastTimer;
+function showToast(msg, color = 'jade') {
+  clearTimeout(toastTimer);
+  const t = document.getElementById('toast');
+  const inner = document.getElementById('toast-inner');
+  const colors = { jade: 'bg-jade text-ink-900', orange: 'bg-accent text-white', sky: 'bg-sky text-white', red: 'bg-red-500 text-white' };
+  inner.className = `flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-sm font-500 ${colors[color] || colors.jade}`;
+  inner.textContent = msg;
+  t.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+  t.classList.add('opacity-100', 'translate-y-0');
+  toastTimer = setTimeout(() => { t.classList.add('opacity-0', 'translate-y-4'); t.classList.remove('opacity-100', 'translate-y-0'); }, 3000);
+}
+
+// ═══════════════════════════════════════════════ PRINT
+function printSection(id) {
+  const el = document.getElementById(id);
+  if (!el) { window.print(); return; }
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>SiAbsen - Laporan</title>
+  <style>
+    body { font-family: 'DM Sans', Arial, sans-serif; color: #111; background: #fff; padding: 32px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f0f0f0; padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+    td { padding: 10px 14px; border-bottom: 1px solid #eee; font-size: 13px; color: #333; }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .header { border-bottom: 2px solid #FF4D00; padding-bottom: 12px; margin-bottom: 24px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .hadir { background: #e8faf4; color: #00a87a; }
+    .terlambat { background: #fff1eb; color: #FF4D00; }
+    .tidak-hadir { background: #fef2f2; color: #e00; }
+    @media print { body { padding: 0; } }
+  </style></head><body>
+  <div class="header"><h1>SiAbsen · Laporan Absensi</h1><p style="color:#888;font-size:13px">Dicetak: ${new Date().toLocaleString('id-ID')}</p></div>
+  ${el.innerHTML}
+  <script>window.onload=()=>{ window.print(); }<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ═══════════════════════════════════════════════ UTILS
+function formatDate(d) {
+  const date = new Date(d);
+  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+</script>
+</body>
+</html>
