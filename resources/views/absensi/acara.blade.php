@@ -46,7 +46,7 @@
                   {{ $acr->deskripsi }}
                 </code>
               </td>
-              <td>{{ $acr->tanggal_selesai }}</td>
+              <td>{{ $acr->tanggal_mulai->format('d-m-Y') }}</td>
               <td>{{ $acr->lokasi }}</td>
               <td class="no-print">
                 <div class="flex gap-2">
@@ -70,7 +70,7 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h2 class="font-display font-800 text-slate-900 text-xl">Tambah Acara</h2>
-        <p class="text-slate-500 text-sm mt-0.5">Buat acara baru dengan agenda</p>
+        <p class="text-slate-500 text-sm mt-0.5">Buat acara baru</p>
       </div>
       <button
         onclick="closeModal(null,'modal-tambah-acara')"
@@ -81,77 +81,35 @@
     </div>
 
     <!-- Form -->
+     <form action="{{route('acara.store')}}" method="POST">
+      @csrf
     <div class="space-y-4">
       <div>
         <label>Nama Acara</label>
-        <input type="text" class="inp" placeholder="Contoh: Seminar Nasional AI 2025">
+        <input type="text" name="nama"  class="inp" placeholder="Contoh: Seminar Nasional AI 2025">
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label>Tanggal Mulai</label>
-          <input type="date" class="inp">
+          <input type="date" name="tanggal_mulai" class="inp">
         </div>
         <div>
           <label>Tanggal Selesai</label>
-          <input type="date" class="inp">
+          <input type="date" name="tanggal_selesai" class="inp">
         </div>
       </div>
 
       <div>
         <label>Lokasi</label>
-        <input type="text" class="inp" placeholder="Nama ruangan / tempat">
+        <input type="text" name="lokasi" class="inp" placeholder="Nama ruangan / tempat">
       </div>
 
       <div>
         <label>Deskripsi</label>
-        <textarea class="inp h-20 resize-none" placeholder="Deskripsi singkat acara"></textarea>
+        <textarea name="deskripsi" class="inp h-20 resize-none" placeholder="Deskripsi singkat acara"></textarea>
       </div>
-
-      <!-- Agenda Generator -->
-      <div class="border border-slate-300 rounded-xl p-4 bg-slate-50">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-display font-600 text-slate-900">Agenda Acara</h3>
-          <button
-            class="btn-green text-xs py-1.5 px-3"
-            onclick="addAgendaRow()"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            + Agenda
-          </button>
-        </div>
-
-        <div id="agenda-rows" class="space-y-2 mb-3">
-          <div class="agenda-row grid grid-cols-12 gap-2 items-center">
-            <input type="text" class="inp col-span-5 text-sm py-2" placeholder="Nama agenda">
-            <input type="time" class="inp col-span-3 text-sm py-2">
-            <input type="time" class="inp col-span-3 text-sm py-2">
-            <button
-              class="col-span-1 text-red-400 hover:text-red-500 flex items-center justify-center transition"
-              onclick="removeAgenda(this)"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-12 gap-2 text-xs text-slate-400 mb-3">
-          <div class="col-span-5">Nama Agenda</div>
-          <div class="col-span-3">Jam Mulai</div>
-          <div class="col-span-3">Jam Selesai</div>
-        </div>
-
-        <button class="btn-secondary w-full justify-center text-sm py-2" onclick="generateAgenda()">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Generate Agenda Otomatis
-        </button>
-      </div>
+      
     </div>
 
     <!-- Actions -->
@@ -169,6 +127,8 @@
         Simpan Acara
       </button>
     </div>
+</form>
+    <!-- End Form -->
   </div>
 </div>
 

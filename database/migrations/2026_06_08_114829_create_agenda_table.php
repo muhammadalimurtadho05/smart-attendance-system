@@ -14,9 +14,10 @@ return new class extends Migration
                   ->constrained('acara')
                   ->cascadeOnDelete();
             $table->string('nama');
-            $table->time('jam_mulai');
-            $table->time('jam_selesai');
-            $table->time('batas_absen_masuk')->nullable();
+            $table->dateTime('checkin');
+            $table->dateTime('checkout');
+            $table->dateTime('batas_checkin')->nullable();
+            $table->dateTime('batas_checkout')->nullable();
             $table->timestamps();
         });
     }

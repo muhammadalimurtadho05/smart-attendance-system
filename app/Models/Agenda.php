@@ -11,8 +11,12 @@ class Agenda extends Model
 {
     protected $table = 'agenda';
     protected $fillable = [
-        'acara_id', 'nama',
-        'jam_mulai', 'jam_selesai', 'batas_absen_masuk'
+        'nama',
+        'acara_id',
+        'checkin',
+        'batas_checkin',
+        'checkout',
+        'batas_checkout',
     ];
 
     public function acara(): BelongsTo

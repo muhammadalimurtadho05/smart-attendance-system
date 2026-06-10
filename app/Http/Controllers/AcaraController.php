@@ -25,23 +25,24 @@ public function store(Request $request)
         'tanggal_mulai'    => 'required|date',
         'tanggal_selesai'  => 'required|date|after_or_equal:tanggal_mulai',
         'lokasi'           => 'nullable|string|max:255',
-        'status'           => 'in:draft,aktif,selesai,dibatalkan',
-        'agenda'           => 'array',
-        'agenda.*.nama'    => 'required|string',
-        'agenda.*.jam_mulai'        => 'required|date_format:H:i',
-        'agenda.*.jam_selesai'      => 'required|date_format:H:i',
-        'agenda.*.batas_absen_masuk' => 'nullable|date_format:H:i',
+        // 'status'           => 'in:draft,aktif,selesai,dibatalkan',
+        // 'agenda'           => 'array',
+        // 'agenda.*.nama'    => 'required|string',
+        // 'agenda.*.jam_mulai'        => 'required|date_format:H:i',
+        // 'agenda.*.jam_selesai'      => 'required|date_format:H:i',
+        // 'agenda.*.batas_absen_masuk' => 'nullable|date_format:H:i',
     ]);
 
-    $acara = Acara::create($data);
+    Acara::create($data);
+    return redirect()->route('acara');
 
     // Simpan agenda sekaligus
-    if (!empty($data['agenda'])) {
-        $acara->agenda()->createMany($data['agenda']);
-    }
+    // if (!empty($data['agenda'])) {
+    //     $acara->agenda()->createMany($data['agenda']);
+    // }
 
-    return redirect()->route('acara.index')
-                     ->with('success', 'Acara berhasil dibuat.');
+    // return redirect()->route('absensi.acara')
+    //                  ->with('success', 'Acara berhasil dibuat.');
 }
 
 // Daftarkan mahasiswa ke acara beserta divisinya

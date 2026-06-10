@@ -15,8 +15,6 @@ return new class extends Migration
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->string('lokasi')->nullable();
-            $table->enum('status', ['draft', 'aktif', 'selesai', 'dibatalkan'])
-                  ->default('draft');
             $table->timestamps();
         });
     }
