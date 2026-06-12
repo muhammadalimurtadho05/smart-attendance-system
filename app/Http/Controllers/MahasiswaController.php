@@ -32,17 +32,13 @@ public function store(Request $request)
         'name'     => 'required|string|max:255',
         'email'    => 'required|email|unique:users',
         'rfid_uid' => 'required|string|unique:users',
-        'photo'    => 'nullable|image|max:2048',
-        'password' => 'required|min:8',
+    ]);
+    $completed_payload = array_merge($data, [
+        'password' => '123',
+        'is_active' => '1'
     ]);
 
-    if ($request->hasFile('photo')) {
-        $data['photo'] = $request->file('photo')->store('photos', 'public');
-    }
-
-    $data['password'] = bcrypt($data['password']);
-
-    User::create($data);
+    User::create($completed_payload);
 
     return redirect()->route('mahasiswa.index')
                      ->with('success', 'Mahasiswa berhasil ditambahkan.');

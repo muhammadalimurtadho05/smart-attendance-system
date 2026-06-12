@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Absensi;
 use App\Models\Acara;
 use App\Models\Agenda;
 use App\Models\Divisi;
+use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+date_default_timezone_set('Asia/Jakarta');
 class AgendaController extends Controller
 {
     /**
@@ -24,7 +26,9 @@ class AgendaController extends Controller
     }
     public function checkin($agenda_id){
         $agenda = Agenda::find($agenda_id);
-        return view('absensi.checkin', compact('agenda'));
+        $absensi = DB::table('absensi')
+        ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')->where('agenda_id', '=', $agenda_id)->get();
+        return view('absensi.checkin', compact('agenda', 'absensi'));
     }
     public function checkout($agenda_id){
         $agenda = Agenda::find($agenda_id);
@@ -67,6 +71,46 @@ class AgendaController extends Controller
         return redirect()->route('acara.agenda', $request->input('acara_id'));
 
     }
+
+    public function checkin_panitia(Request $request, $id_agenda) {
+    $nowImmutable = new \DateTimeImmutable();
+    $jam = $nowImmutable->format('Y-m-d H:i:s');
+    
+    // 1. Simpan data baru
+    Absensi::create([
+        'agenda_id' => $id_agenda,
+        'rfid_uid' => $request->input('rfid'),
+        'waktu_masuk' => $jam,
+        'status' => 'hadir',
+        'keterangan' => '-',
+    ]);
+
+    if ($request->wantsJson() || $request->ajax()) {
+    try {
+        // 1. UBAH DI SINI (hilangkan huruf 's')
+        $absensi = DB::table('absensi')
+        ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')->where('agenda_id', '=', $id_agenda)->orderBy('waktu_masuk', 'desc')->get() ;
+        
+
+        // 2. UBAH JUGA DI SINI (di dalam compact)
+        $htmlTabel = view('partials.tabel_absensi', compact('absensi'))->render();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Berhasil scan!',
+            'html' => $htmlTabel
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error PHP: ' . $e->getMessage() . ' di baris ' . $e->getLine()
+        ], 200);
+    }
+}
+
+    return redirect()->route('checkin', $id_agenda);
+}
 
     /**
      * Display the specified resource.

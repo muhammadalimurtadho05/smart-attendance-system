@@ -237,7 +237,6 @@ function filterTable(q) {
 }
 
 function saveMahasiswa() {
-  const rfid = document.getElementById('rfid-new').value || 'RF' + Math.random().toString(36).substr(2, 6).toUpperCase();
   showToast('✓ Mahasiswa berhasil ditambahkan!', 'jade');
   closeModal(null, 'modal-tambah-mahasiswa');
 }
@@ -245,91 +244,9 @@ function saveMahasiswa() {
 function editMahasiswa(id) { showToast('✏️ Mode edit mahasiswa #' + id, 'sky'); }
 function hapusMahasiswa(id) { showToast('🗑️ Mahasiswa dihapus', 'red'); }
 
-function simulateRFID() {
-  const chars = 'ABCDEF0123456789';
-  let rfid = '';
-  for (let i = 0; i < 8; i++) rfid += chars[Math.floor(Math.random() * chars.length)];
-  document.getElementById('rfid-new').value = rfid;
-  showToast('📡 RFID terdeteksi: ' + rfid, 'jade');
-}
-
-function previewFoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('foto-img').src = e.target.result;
-    document.getElementById('foto-preview').classList.remove('hidden');
-  };
-  reader.readAsDataURL(file);
-}
-
-// ═══════════════════════════════════════════════ ACARA
-function renderAcaraList() {
-  const container = document.getElementById('acara-list');
-  container.innerHTML = acaraData.map(a => {
-    const statusClass = { aktif: 'badge-green', upcoming: 'badge-blue', selesai: 'badge-gray' }[a.status] || 'badge-gray';
-    return `
-    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-      <div class="p-5 cursor-pointer" onclick="toggleAccordion('acara-${a.id}')">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-1">
-              <h3 class="font-display font-700 text-slate-900 text-base">${a.nama}</h3>
-              <span class="badge ${statusClass} text-xs">${a.status}</span>
-            </div>
-            <div class="flex flex-wrap gap-4 text-sm text-slate-500">
-              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${formatDate(a.tanggalMulai)}</span>
-              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${a.lokasi}</span>
-              <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>${a.agenda.length} agenda</span>
-            </div>
-          </div>
-          <div class="flex gap-2 flex-shrink-0 no-print">
-            <button class="btn-green text-xs py-1.5 px-3" onclick="event.stopPropagation();openDetailAcara(${a.id})">Detail</button>
-            <button class="btn-secondary text-xs py-1.5 px-3" onclick="event.stopPropagation();showModal('modal-tambah-acara')">Edit</button>
-            <svg class="w-5 h-5 text-slate-400 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </div>
-      </div>
-      <div id="acara-${a.id}" class="accordion-content">
-        <div class="px-5 pb-5 pt-0 border-t border-slate-200">
-          <p class="text-slate-500 text-sm mb-4 mt-4">${a.deskripsi}</p>
-          <div class="text-xs font-display font-600 uppercase tracking-wider text-slate-400 mb-3">Agenda</div>
-          <div class="space-y-2">
-            ${a.agenda.map(ag => `
-              <div class="flex items-center gap-3 p-3 rounded-xl bg-white">
-                <div class="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0"></div>
-                <div class="flex-1"><div class="text-slate-900 text-sm font-500">${ag.nama}</div><div class="text-slate-500 text-xs">${ag.mulai} – ${ag.selesai} · Batas absen: ${ag.batasAbsen}</div></div>
-                <button class="btn-primary text-xs py-1.5 px-3" onclick="navigate('absensi')">Absensi</button>
-              </div>`).join('')}
-          </div>
-          <button class="btn-secondary mt-3 text-xs py-2 px-4" onclick="addAgendaToAcara(${a.id})"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Tambah Agenda</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
 function toggleAccordion(id) {
   const el = document.getElementById(id);
   el.classList.toggle('open');
-}
-
-function openDetailAcara(id) {
-  const a = acaraData.find(x => x.id === id);
-  document.getElementById('detail-acara-title').textContent = a.nama;
-  document.getElementById('detail-acara-sub').textContent = formatDate(a.tanggalMulai) + ' · ' + a.lokasi;
-  document.getElementById('detail-agenda-list').innerHTML = a.agenda.map(ag => `
-    <div class="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-          <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
-        </div>
-        <div><div class="text-slate-900 font-600 text-sm">${ag.nama}</div><div class="text-slate-500 text-xs">${ag.mulai} – ${ag.selesai} · Batas: ${ag.batasAbsen}</div></div>
-      </div>
-      <button class="btn-green text-xs py-1.5 px-3" onclick="closeModal(null,'modal-detail-acara');navigate('absensi')">Absensi</button>
-    </div>`).join('');
-  showModal('modal-detail-acara');
 }
 
 function saveAcara() {

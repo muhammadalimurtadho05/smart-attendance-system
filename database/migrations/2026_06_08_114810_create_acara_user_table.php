@@ -10,9 +10,6 @@ return new class extends Migration
     {
         Schema::create('acara_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('acara_id')
-                  ->constrained('acara')
-                  ->cascadeOnDelete();
             $table->foreignId('user_id')
                   ->constrained('users')
                   ->cascadeOnDelete();
@@ -21,7 +18,7 @@ return new class extends Migration
                   ->restrictOnDelete();
             $table->timestamps();
 
-            $table->unique(['acara_id', 'user_id']);
+            $table->unique(['divisi_id', 'user_id']);
         });
     }
 

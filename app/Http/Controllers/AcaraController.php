@@ -9,10 +9,7 @@ class AcaraController extends Controller
 {
    public function index()
 {
-    $acara = Acara::withCount('agenda')
-                  ->with('users')
-                  ->orderByDesc('tanggal_mulai')
-                  ->get();
+    $acara = Acara::all();
 
     return view('absensi.acara', compact('acara'));
 }

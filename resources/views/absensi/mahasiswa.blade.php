@@ -95,27 +95,37 @@
         ✕
       </button>
     </div>
-
+    <form action="{{route('mahasiswa.store')}}" method="POST">
     <!-- RFID Scan Section -->
     <div class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 mb-5 text-center relative overflow-hidden">
-      <div class="absolute inset-0 flex items-center justify-center opacity-5">
+      <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
         <div class="w-48 h-48 border-2 border-blue-600 rounded-full"></div>
       </div>
-      <div class="w-12 h-12 rounded-full border-2 border-blue-600 mx-auto flex items-center justify-center rfid-pulse mb-2">
+      <div class="w-12 h-12 rounded-full border-2 border-blue-600 mx-auto flex items-center justify-center mb-2" id="rfid-pulse">
         <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
         </svg>
       </div>
       <p class="text-slate-500 text-sm mb-3">Tempelkan kartu RFID untuk scan otomatis</p>
+      <b>
+        <span class="text-slate-500 text-sm mb-3">RFID UID :</span>
+        <span class="text-blue-500 text-sm mb-3" id="inner-rfid"></span>
+        <br>
+      </b>
+      
       <div class="flex gap-2 items-center max-w-xs mx-auto">
         <input
+        style="opacity:0;"
           type="text"
           id="rfid-new"
-          class="inp text-center font-display font-700 tracking-widest text-sm flex-1"
+          class="inp  text-center"
           placeholder="RFID ID"
           maxlength="16"
+          autofocus
+          name="rfid_uid"
+          autocomplete="off"
         >
-        <button class="btn-primary py-2 px-3 text-sm" onclick="simulateRFID()">Scan</button>
+        <button class="btn-primary py-2 px-3 text-sm" id="scan" type="button">Scan</button>
       </div>
     </div>
 
@@ -123,49 +133,13 @@
     <div class="space-y-4 mb-4">
       <div>
         <label>Nama Lengkap</label>
-        <input type="text" class="inp" placeholder="Masukkan nama lengkap">
+        <input type="text" class="inp" name="name" placeholder="Masukkan nama lengkap">
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <div>
         <div>
           <label>Email</label>
-          <input type="email" class="inp" placeholder="email@kampus.ac.id">
-        </div>
-        <div>
-          <label>Jabatan</label>
-          <select class="inp">
-            <option value="">Pilih Jabatan</option>
-            <option>Ketua</option>
-            <option>Wakil Ketua</option>
-            <option>Sekretaris</option>
-            <option>Bendahara</option>
-            <option>Anggota</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Foto Upload -->
-      <div>
-        <label>Foto Mahasiswa</label>
-        <div
-          class="border border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-600 hover:bg-blue-50 transition"
-          onclick="document.getElementById('foto-input').click()"
-        >
-          <div id="foto-preview" class="hidden mb-3">
-            <img id="foto-img" class="w-20 h-20 rounded-full object-cover mx-auto border-2 border-blue-600">
-          </div>
-          <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <p class="text-slate-500 text-sm">Klik untuk upload foto</p>
-          <p class="text-slate-400 text-xs mt-1">PNG, JPG max 2MB</p>
-          <input
-            type="file"
-            id="foto-input"
-            class="hidden"
-            accept="image/*"
-            onchange="previewFoto(this)"
-          >
+          <input type="email" class="inp" name="email" placeholder="email@kampus.ac.id">
         </div>
       </div>
     </div>
@@ -181,11 +155,52 @@
       <button
         class="btn-primary flex-1 justify-center"
         onclick="saveMahasiswa()"
+        type="submit"
       >
         Simpan Mahasiswa
       </button>
     </div>
+    </form>
   </div>
 </div>
+
+<script>
+  const btn_scan = document.getElementById('scan');
+  const inputRfid = document.getElementById('rfid-new')
+  const innerRfid = document.getElementById('inner-rfid')
+  const rfidpulse = document.getElementById('rfid-pulse')
+
+  inputRfid.addEventListener('focus', (e)=>{
+    rfidpulse.classList.add('rfid-pulse')
+  })
+  inputRfid.addEventListener('blur', (e) => {
+    rfidpulse.classList.remove('rfid-pulse');
+  });
+  btn_scan.addEventListener('click', (e)=>{
+        inputRfid.focus();
+
+  })
+  
+  let lastKeyTime = 0;
+  // Dengarkan setiap kali ada tombol yang ditekan di dalam input
+  inputRfid.addEventListener('keydown', function(e) {
+    const currentTime = Date.now();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+    innerRfid.textContent = inputRfid.value
+    // Hitung jarak waktu antara ketikan sebelumnya dan saat ini
+    const timeDifference = currentTime - lastKeyTime;
+    
+    // Jika jeda waktu lebih dari 50 milidetik (artinya diketik manual oleh manusia)
+    // dan tombol yang ditekan bukanlah tombol 'Enter'
+    if (timeDifference > 50 && e.key !== 'Enter') {
+      inputRfid.value = ''; // Langsung kosongkan input
+    }
+    
+    // Perbarui waktu terakhir tombol ditekan
+    lastKeyTime = currentTime;
+  });
+</script>
 
 @endsection

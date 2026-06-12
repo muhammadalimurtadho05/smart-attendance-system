@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'rfid_uid', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 // app/Models/User.php
 class User extends Authenticatable

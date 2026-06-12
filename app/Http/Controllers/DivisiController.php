@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Divisi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DivisiController extends Controller
 {
@@ -36,6 +37,13 @@ class DivisiController extends Controller
         Divisi::create($completed_payload);
         return redirect()->route('acara.agenda', $request->input('acara_id'));
 
+    }
+
+    public function divisiAgenda($divisi_id){
+        $panitia = DB::table('acara_user')
+                    ->join('users', 'acara_user.user_id', '=', 'users.id')
+                    ->where('acara_user.divisi_id', '=', $divisi_id)->get();
+        return view('absensi.panitia', compact('panitia'));
     }
 
     /**

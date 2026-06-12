@@ -128,6 +128,7 @@
             <th>No</th>
             <th>Divisi</th>
             <th>Deskripsi</th>
+            <th>Panitia</th>
             <th class="no-print">Aksi</th>
           </tr>
         </thead>
@@ -139,6 +140,7 @@
              <td class="text-slate-400">{{ $idx + 1 }}</td>
              <td class="text-slate-400">{{ $div->nama }}</td>
              <td class="text-slate-400">{{ $div->deskripsi }}</td>
+             <td class="text-blue-400"><a href="{{ route('agenda.divisi', $div->id)  }}">Panitia</a></td>
              <td class="no-print">
                <div class="flex gap-2">
                  <button class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled opacity-50 cursor-not-allowed" disabled>Detail</button>

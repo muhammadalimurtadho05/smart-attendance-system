@@ -14,6 +14,11 @@
           </svg>
         </div>
         <div id="rfid-status" class="text-slate-500 text-sm mb-4">Tempelkan kartu RFID...</div>
+        <form id="form-scan" method="POST" action="{{ route('checkin.agenda', $agenda->id) }}">
+  @csrf <input type="text" autofocus class="inp" autocomplete="off" id="scan" name="rfid" placeholder="Scan RFID di sini...">
+</form>
+
+<div id="notifikasi" class="mt-4 text-sm font-semibold"></div>
         <div id="absen-result" class="mt-3 hidden"></div>
       </div>
 
@@ -55,12 +60,11 @@
                 <th>Mahasiswa</th>
                 <th>Agenda</th>
                 <th>Jam Masuk</th>
-                <th>Jam Pulang</th>
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody id="absensi-tbody">
-              <!-- Populated by JS -->
+            <tbody id="tabel-absensi">
+              @include('partials.tabel_absensi', ['absensis' => $absensi])
             </tbody>
           </table>
         </div>
@@ -68,5 +72,101 @@
     </div>
   </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ==========================================
+    // 1. DEKLARASI VARIABEL ELEMEN
+    // ==========================================
+    const formScan = document.getElementById('form-scan');
+    const inputScan = document.getElementById('scan');
+    const notifikasi = document.getElementById('notifikasi');
+    const tbodyAbsensi = document.getElementById('tabel-absensi');
+    
+    // Target div yang memiliki animasi rfid
+    const rfidPulseContainer = document.querySelector('.rfid-pulse'); 
 
+    // ==========================================
+    // 2. FITUR ANIMASI PULSE SAAT FOKUS
+    // ==========================================
+    if (inputScan && rfidPulseContainer) {
+        // Tambahkan class animasi saat kursor aktif di input
+        inputScan.addEventListener('focus', () => {
+            rfidPulseContainer.classList.add('rfid-pulse');
+        });
+        
+        // Hapus class animasi saat kursor klik ke tempat lain
+        inputScan.addEventListener('blur', () => {
+            rfidPulseContainer.classList.remove('rfid-pulse');
+        });
+    }
+
+    // ==========================================
+    // 3. FITUR CEGAH INPUT MANUAL (Hanya Scanner)
+    // ==========================================
+    let lastKeyTime = 0;
+    inputScan.addEventListener('keydown', function(e) {
+        const currentTime = Date.now();
+        const timeDifference = currentTime - lastKeyTime;
+        
+        // Jika jeda ketikan > 50ms (artinya diketik jari) & bukan tombol Enter
+        if (timeDifference > 50 && e.key !== 'Enter') {
+            inputScan.value = ''; // Kosongkan input seketika
+        }
+        lastKeyTime = currentTime;
+    });
+
+    // ==========================================
+    // 4. FITUR AJAX SUBMIT & UPDATE TABEL
+    // ==========================================
+    formScan.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const rfidValue = inputScan.value;
+        const url = formScan.action;
+        const csrfToken = document.querySelector('input[name="_token"]').value;
+
+        if (!rfidValue || rfidValue.trim() === '') return;
+
+        notifikasi.innerHTML = `<span class="text-blue-500">Memproses absensi...</span>`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest' // Memastikan Laravel mendeteksi request sebagai AJAX
+            },
+            body: JSON.stringify({ rfid: rfidValue })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // JIKA BERHASIL: Munculkan pesan sukses dan timpa isi tabel
+                notifikasi.innerHTML = `<span class="text-green-600 font-bold">✅ ${data.message}</span>`;
+                
+                if (tbodyAbsensi) {
+                    tbodyAbsensi.innerHTML = data.html;
+                }
+            } else {
+                // JIKA GAGAL DARI LARAVEL: Munculkan pesan error asli dari PHP
+                notifikasi.innerHTML = `<span class="text-red-600 font-bold text-sm">❌ ${data.message}</span>`;
+                console.error("Detail Error PHP:", data.message);
+            }
+        })
+        .catch(error => {
+            // Jika error terjadi sebelum mencapai Controller (misal jaringan putus)
+            console.error('Error Fetch:', error);
+            notifikasi.innerHTML = `<span class="text-red-600 font-bold">❌ Gagal terhubung ke server.</span>`;
+        })
+        .finally(() => {
+            // Selalu kosongkan dan kembalikan kursor ke input agar siap scan kartu berikutnya
+            inputScan.value = '';
+            inputScan.focus();
+        });
+    });
+
+});
+</script>
 @endsection

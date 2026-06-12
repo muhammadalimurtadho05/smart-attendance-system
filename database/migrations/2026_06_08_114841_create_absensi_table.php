@@ -13,9 +13,6 @@ return new class extends Migration
             $table->foreignId('agenda_id')
                   ->constrained('agenda')
                   ->cascadeOnDelete();
-            $table->foreignId('user_id')
-                  ->constrained('users')
-                  ->cascadeOnDelete();
             $table->string('rfid_uid', 32)->nullable();
             $table->datetime('waktu_masuk')->nullable();
             $table->datetime('waktu_pulang')->nullable();
@@ -24,7 +21,6 @@ return new class extends Migration
             $table->text('keterangan')->nullable();
             $table->timestamps();
 
-            $table->unique(['agenda_id', 'user_id']);
             $table->index('rfid_uid');
             $table->index('status');
         });
