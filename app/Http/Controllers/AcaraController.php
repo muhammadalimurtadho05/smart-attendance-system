@@ -32,14 +32,6 @@ public function store(Request $request)
 
     Acara::create($data);
     return redirect()->route('acara');
-
-    // Simpan agenda sekaligus
-    // if (!empty($data['agenda'])) {
-    //     $acara->agenda()->createMany($data['agenda']);
-    // }
-
-    // return redirect()->route('absensi.acara')
-    //                  ->with('success', 'Acara berhasil dibuat.');
 }
 
 // Daftarkan mahasiswa ke acara beserta divisinya

@@ -147,6 +147,7 @@
 </div>
 
 <script>
+  
 // ═══════════════════════════════════════════════ DATA
 const mahasiswaData = [
   { id: 1, rfid: 'A1B2C3D4', nama: 'Ahmad Fauzi', email: 'ahmad@kampus.ac.id', jabatan: 'Ketua', foto: '', status: 'aktif' },
