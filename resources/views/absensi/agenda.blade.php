@@ -442,6 +442,7 @@
 @endsection
 
 <script>
+  const agenda = true
 function showDetailModal(id, nama, checkin, batasCheckin, checkout, batasCheckout) {
   // Populate modal data
   document.getElementById('detail-nama').textContent = nama;

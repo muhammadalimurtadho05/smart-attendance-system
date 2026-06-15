@@ -407,10 +407,14 @@ function printSection(id) {
   win.document.close();
 }
 
-// ═══════════════════════════════════════════════ UTILS
 function formatDate(d) {
   const date = new Date(d);
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+}
+
+if(typeof agenda == 'undefined'){
+  localStorage.removeItem('agendaActiveTab')
 }
 </script>
 </body>
