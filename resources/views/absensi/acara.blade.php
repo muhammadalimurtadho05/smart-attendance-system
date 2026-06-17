@@ -210,11 +210,11 @@
             const formAcara = document.getElementById('form-acara')
             formAcara.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const namaAcara = document.getElementById('nama_acara_baru').value
-                const tanggal_mulai_acara = document.getElementById('tanggal_mulai_acara_baru').value
-                const tanggal_selesai_acara = document.getElementById('tanggal_selesai_acara_baru').value
-                const lokasi_acara = document.getElementById('lokasi_acara_baru').value
-                const deskripsi_acara = document.getElementById('deskripsi_acara_baru').value
+                const namaAcara = document.getElementById('nama_acara_baru')
+                const tanggal_mulai_acara = document.getElementById('tanggal_mulai_acara_baru')
+                const tanggal_selesai_acara = document.getElementById('tanggal_selesai_acara_baru')
+                const lokasi_acara = document.getElementById('lokasi_acara_baru')
+                const deskripsi_acara = document.getElementById('deskripsi_acara_baru')
 
                 const notifikasi = document.getElementById('notifikasi')
                 
@@ -233,11 +233,11 @@
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify({
-                            nama: namaAcara,
-                            tanggal_mulai: tanggal_mulai_acara,
-                            tanggal_selesai: tanggal_selesai_acara,
-                            lokasi: lokasi_acara,
-                            deskripsi: deskripsi_acara
+                            nama: namaAcara.value,
+                            tanggal_mulai: tanggal_mulai_acara.value,
+                            tanggal_selesai: tanggal_selesai_acara.value,
+                            lokasi: lokasi_acara.value,
+                            deskripsi: deskripsi_acara.value
                         })
                     })
                     .then(response => response.json())
@@ -247,9 +247,15 @@
                             notifikasi.innerHTML = `<span class="text-green-600 font-bold">Berhasil!</span>`;
                             setTimeout(() => {
                                 notifikasi.innerHTML = ``;
-                                closeModal(null,'modal-tambah-acara')
+                                
                                 acara_tabel.innerHTML = data.table;
                             }, 400);
+                            closeModal(null,'modal-tambah-acara')
+                            namaAcara.value = ''
+                            tanggal_mulai_acara.value = ''
+                            tanggal_selesai_acara.value = ''
+                            lokasi_acara.value = ''
+                            deskripsi_acara.value = ''
                         } else {
                             notifikasi.innerHTML =
                                 `<span class="text-red-600 font-bold text-sm"> ${data.message}</span>`;
