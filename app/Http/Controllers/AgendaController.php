@@ -19,6 +19,7 @@ class AgendaController extends Controller
      */
     public function index($acara_id)
     {
+        $acara_id = decrypt($acara_id);
         $agenda = DB::table('agenda')->where('acara_id', '=', $acara_id)->get();
         $namaacara = Acara::find($acara_id, ['nama', 'id']);
         $divisi = Divisi::all()->where('acara_id', '=', $acara_id);

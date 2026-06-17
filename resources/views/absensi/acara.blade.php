@@ -48,7 +48,7 @@
                                 <td>{{ $acr->lokasi }}</td>
                                 <td class="no-print">
                                     <div class="flex gap-2">
-                                        <a href="/acara/agenda/{{ $acr->id }}"
+                                        <a href="{{ route('acara.agenda', ['acara_id' => encrypt($acr->id)]) }}"
                                             class="btn-primary py-1.5 px-3 text-xs">Detail</a>
                                         <button class="btn-secondary py-1.5 px-3 text-xs" data-id="{{ $acr->id }}"
                                             data-nama="{{ $acr->nama }}"
@@ -56,7 +56,7 @@
                                             data-tgl-selesai="{{ $acr->tanggal_selesai->format('Y-m-d') }}"
                                             data-lokasi="{{ $acr->lokasi }}" data-deskripsi="{{ $acr->deskripsi }}"
                                             onclick="openEditAcara(this)">Edit</button>
-                                        <a href="/acara/delete/{{ $acr->id }}" class="btn-danger py-1.5 px-3 text-xs"
+                                        <a href="{{ route('acara.delete', ['id' => encrypt($acr->id)]) }}" class="btn-danger py-1.5 px-3 text-xs"
                                             onclick="return confirm('Apakah Anda yakin ingin menghapus acara ini?')">Hapus</a>
                                     </div>
                                 </td>
