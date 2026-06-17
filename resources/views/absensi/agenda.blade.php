@@ -135,16 +135,17 @@
                 </thead>
                 <tbody id="template-tbody">
                     @foreach ($divisi as $idx => $div)
-                        <tr class="bg-slate-50 border-b border-slate-100">
-                            <td class="text-slate-400">{{ $idx + 1 }}</td>
-                            <td class="text-slate-400">{{ $div->nama }}</td>
-                            <td class="text-slate-400">{{ $div->deskripsi }}</td>
-                            <td class="text-blue-400"><a href="{{ route('agenda.divisi', $div->id) }}">Panitia</a></td>
+                        <tr>
+                            <td>{{ $idx + 1 }}</td>
+                            <td>{{ $div->nama }}</td>
+                            <td>{{ $div->deskripsi }}</td>
+                            <td class="text-blue-400"><a href="{{ route('agenda.divisi', ['divisi_id' => encrypt($div->id)]) }}">Panitia</a></td>
                             <td class="no-print">
                                 <div class="flex gap-2">
                                     <button
-                                        class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled opacity-50 cursor-not-allowed"
-                                        disabled>Detail</button>
+                                        class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                                        onclick="showDetailDivisiModal('{{ $div->id }}', '{{ $div->nama }}', '{{ $div->deskripsi }}')"
+                                        >Detail</button>
                                     <button
                                         class="btn-secondary py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
                                         disabled>Edit</button>
@@ -167,69 +168,33 @@
                         <th>Nama</th>
                         <th>RFID</th>
                         <th>Divisi</th>
-                        <th>Checkin</th>
-                        <th>Checkout</th>
                         <th class="no-print">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="template-tbody">
-                    <tr class="bg-slate-50 border-b border-slate-100">
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="no-print">
-                            <div class="flex gap-2">
-                                <button
-                                    class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled opacity-50 cursor-not-allowed"
-                                    disabled>Detail</button>
-                                <button class="btn-secondary py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
-                                    disabled>Edit</button>
-                                <button class="btn-danger py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
-                                    disabled>Hapus</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="bg-slate-50 border-b border-slate-100">
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="no-print">
-                            <div class="flex gap-2">
-                                <button
-                                    class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled opacity-50 cursor-not-allowed"
-                                    disabled>Detail</button>
-                                <button class="btn-secondary py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
-                                    disabled>Edit</button>
-                                <button class="btn-danger py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
-                                    disabled>Hapus</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="bg-slate-50 border-b border-slate-100">
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="text-slate-400">-</td>
-                        <td class="no-print">
-                            <div class="flex gap-2">
-                                <button
-                                    class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled opacity-50 cursor-not-allowed"
-                                    disabled>Detail</button>
-                                <button class="btn-secondary py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
-                                    disabled>Edit</button>
-                                <button class="btn-danger py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
-                                    disabled>Hapus</button>
-                            </div>
-                        </td>
-                    </tr>
+                    @foreach ($panitia as $idx => $panpel)
+                        <tr>
+                            <td> {{ $idx+1 }} </td>
+                            <td> {{ $panpel->name }} </td>
+                            <td>
+                                <code class="text-xs font-display text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                                    {{ $panpel->rfid_uid }}
+                                </code>
+                            </td>
+                            <td>{{ $panpel->nama }}</td>
+                            <td class="no-print">
+                                <div class="flex gap-2">
+                                    <button
+                                        class="py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled opacity-50 cursor-not-allowed"
+                                        disabled>Detail</button>
+                                    <button class="btn-secondary py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
+                                        disabled>Edit</button>
+                                    <button class="btn-danger py-1.5 px-3 text-xs disabled opacity-50 cursor-not-allowed"
+                                        disabled>Hapus</button>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -416,6 +381,46 @@
             </div>
         </div>
     </div>
+    <div id="modal-detail-divisi" class="modal-overlay hidden" onclick="closeModal(event,'modal-detail-divisi')">
+        <div class="modal-box max-w-2xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 id="detail-acara-title" class="font-display font-800 text-slate-900 text-xl">Detail Divisi</h2>
+                    <p id="detail-acara-sub" class="text-slate-500 text-sm mt-0.5"></p>
+                </div>
+                <button onclick="closeModal(null,'modal-detail-divisi')"
+                    class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition">
+                    ✕
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-slate-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-slate-600 font-600 uppercase tracking-wide">Nama Agenda</p>
+                            <p id="detail-divisi-nama" class="text-slate-900 font-500 mt-1"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 class="text-sm font-600 text-blue-900 mb-3 flex items-center gap-2">
+                        Deskripsi Divisi
+                    </h3>
+                    <div>
+                        <p id="detail-divisi-deskripsi" class="text-slate-900 font-600 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-200 flex gap-2">
+                <button class="btn-secondary justify-center" onclick="closeModal(null,'modal-detail-divisi')">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-edit-acara" class="modal-overlay hidden" onclick="closeModal(event,'modal-edit-acara')">
         <div class="modal-box max-w-2xl" onclick="event.stopPropagation()">
@@ -494,6 +499,11 @@
         document.getElementById('detail-batas-checkout').textContent = batasCheckout || '-';
 
         showModal('modal-detail-acara');
+    }
+    function showDetailDivisiModal(id, nama, detail) {
+        document.getElementById('detail-divisi-nama').textContent = nama;
+        document.getElementById('detail-divisi-deskripsi').textContent = detail || '-';
+        showModal('modal-detail-divisi');
     }
 
     function showEditModal(id, nama, checkin, batasCheckin, checkout, batasCheckout) {

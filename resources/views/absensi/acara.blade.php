@@ -33,35 +33,8 @@
                         </tr>
                     </thead>
                     <tbody id="acara-tbody">
-                        @foreach ($acara as $idx => $acr)
-                            <tr>
-                                <td>{{ $idx + 1 }}</td>
-                                <td>
-                                    <div class="text-slate-900 font-500 text-sm">{{ $acr->nama }}</div>
-                                </td>
-                                <td>
-                                    <code class="text-xs font-display text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
-                                        {{ $acr->deskripsi }}
-                                    </code>
-                                </td>
-                                <td>{{ $acr->tanggal_mulai->format('d-m-Y') }}</td>
-                                <td>{{ $acr->lokasi }}</td>
-                                <td class="no-print">
-                                    <div class="flex gap-2">
-                                        <a href="{{ route('acara.agenda', ['acara_id' => encrypt($acr->id)]) }}"
-                                            class="btn-primary py-1.5 px-3 text-xs">Detail</a>
-                                        <button class="btn-secondary py-1.5 px-3 text-xs" data-id="{{ $acr->id }}"
-                                            data-nama="{{ $acr->nama }}"
-                                            data-tgl-mulai="{{ $acr->tanggal_mulai->format('Y-m-d') }}"
-                                            data-tgl-selesai="{{ $acr->tanggal_selesai->format('Y-m-d') }}"
-                                            data-lokasi="{{ $acr->lokasi }}" data-deskripsi="{{ $acr->deskripsi }}"
-                                            onclick="openEditAcara(this)">Edit</button>
-                                        <a href="{{ route('acara.delete', ['id' => encrypt($acr->id)]) }}" class="btn-danger py-1.5 px-3 text-xs"
-                                            onclick="return confirm('Apakah Anda yakin ingin menghapus acara ini?')">Hapus</a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
+                        @include('partials.acara_partial', ['acara' => $acara])
+                        
                     </tbody>
                 </table>
             </div>
@@ -81,34 +54,36 @@
                 </button>
             </div>
 
-            <form action="{{ route('acara.store') }}" method="POST">
+            <form action="{{ route('acara.store') }}" method="POST" id="form-acara" >
                 @csrf
                 <div class="space-y-4">
                     <div>
                         <label>Nama Acara</label>
-                        <input type="text" name="nama" class="inp" placeholder="Contoh: Seminar Nasional AI 2025">
+                        <input type="text" name="nama" id="nama_acara_baru" class="inp" placeholder="Contoh: Seminar Nasional AI 2025">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label>Tanggal Mulai</label>
-                            <input type="date" name="tanggal_mulai" class="inp">
+                            <input type="date" id="tanggal_mulai_acara_baru" name="tanggal_mulai" class="inp">
                         </div>
                         <div>
                             <label>Tanggal Selesai</label>
-                            <input type="date" name="tanggal_selesai" class="inp">
+                            <input type="date" name="tanggal_selesai" id="tanggal_selesai_acara_baru" class="inp">
                         </div>
                     </div>
 
                     <div>
                         <label>Lokasi</label>
-                        <input type="text" name="lokasi" class="inp" placeholder="Nama ruangan / tempat">
+                        <input type="text" name="lokasi" id="lokasi_acara_baru" class="inp" placeholder="Nama ruangan / tempat">
                     </div>
 
                     <div>
                         <label>Deskripsi</label>
-                        <textarea name="deskripsi" class="inp h-20 resize-none" placeholder="Deskripsi singkat acara"></textarea>
+                        <textarea name="deskripsi" class="inp h-20 resize-none" id="deskripsi_acara_baru" placeholder="Deskripsi singkat acara"></textarea>
                     </div>
+                    <div id="notifikasi" class="mt-4 text-sm font-semibold"></div>
+
 
                 </div>
 
@@ -116,7 +91,7 @@
                     <button class="btn-secondary flex-1 justify-center" onclick="closeModal(null,'modal-tambah-acara')">
                         Batal
                     </button>
-                    <button class="btn-primary flex-1 justify-center">
+                    <button class="btn-primary flex-1 justify-center" >
                         Simpan Acara
                     </button>
                 </div>
@@ -230,5 +205,66 @@
 
             showModal('modal-edit-acara');
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const formAcara = document.getElementById('form-acara')
+            formAcara.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const namaAcara = document.getElementById('nama_acara_baru').value
+                const tanggal_mulai_acara = document.getElementById('tanggal_mulai_acara_baru').value
+                const tanggal_selesai_acara = document.getElementById('tanggal_selesai_acara_baru').value
+                const lokasi_acara = document.getElementById('lokasi_acara_baru').value
+                const deskripsi_acara = document.getElementById('deskripsi_acara_baru').value
+
+                const notifikasi = document.getElementById('notifikasi')
+                
+                // if (!namaAcara || namaAcara.trim() === '') return;
+                const url = formAcara.action;
+                const csrfToken = document.querySelector('input[name="_token"]').value;
+                const acara_tabel = document.getElementById('acara-tbody');
+                notifikasi.innerHTML = `<span class="text-blue-500">Menambahkan Acara...</span>`;
+
+                fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            nama: namaAcara,
+                            tanggal_mulai: tanggal_mulai_acara,
+                            tanggal_selesai: tanggal_selesai_acara,
+                            lokasi: lokasi_acara,
+                            deskripsi: deskripsi_acara
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+
+                            notifikasi.innerHTML = `<span class="text-green-600 font-bold">Berhasil!</span>`;
+                            setTimeout(() => {
+                                notifikasi.innerHTML = ``;
+                                closeModal(null,'modal-tambah-acara')
+                                acara_tabel.innerHTML = data.table;
+                            }, 400);
+                        } else {
+                            notifikasi.innerHTML =
+                                `<span class="text-red-600 font-bold text-sm"> ${data.message}</span>`;
+                            console.error("Detail Error PHP:", data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error Fetch:', error);
+                        notifikasi.innerHTML =
+                            `<span class="text-red-600 font-bold">Gagal terhubung ke server.</span>`;
+                    })
+                    .finally(() => {
+                        closeModal(e, 'modal-tambah-acara')
+                    });
+            })
+        })
     </script>
 @endsection

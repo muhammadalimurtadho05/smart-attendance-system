@@ -23,8 +23,12 @@ class AgendaController extends Controller
         $agenda = DB::table('agenda')->where('acara_id', '=', $acara_id)->get();
         $namaacara = Acara::find($acara_id, ['nama', 'id']);
         $divisi = Divisi::all()->where('acara_id', '=', $acara_id);
+        $panitia = DB::table('users')
+                ->join('acara_user', 'users.id', '=', 'acara_user.user_id')
+                ->join('divisi', 'divisi.id', '=', 'acara_user.divisi_id')
+                ->where('acara_user.acara_id', '=', $acara_id)->get();
 
-        return view('absensi.agenda', compact('agenda', 'namaacara', 'divisi'));
+        return view('absensi.agenda', compact('agenda', 'namaacara', 'divisi', 'panitia'));
 
     }
 
@@ -98,12 +102,10 @@ class AgendaController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             try {
-                // 1. UBAH DI SINI (hilangkan huruf 's')
                 $absensi = DB::table('absensi')
                     ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')->where('agenda_id', '=', $id_agenda)->orderBy('waktu_masuk', 'desc')->get();
                 $nama = DB::table('users')->where('rfid_uid', $request->input('rfid'))->first();
 
-                // 2. UBAH JUGA DI SINI (di dalam compact)
                 $htmlTabel = view('partials.tabel_absensi', compact('absensi'))->render();
 
                 return response()->json([

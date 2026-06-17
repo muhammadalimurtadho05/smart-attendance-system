@@ -44,6 +44,7 @@ class DivisiController extends Controller
 
     public function divisiAgenda($divisi_id)
     {
+        $divisi_id = decrypt($divisi_id);
         $divisi = Divisi::find($divisi_id);
         $acara = Acara::find($divisi->acara_id);
         $panitia_available = DB::table('users')->whereNotIn('id', function ($query) use ($acara) {

@@ -76,7 +76,7 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-
+ 
             const formScan = document.getElementById('form-scan');
             const inputScan = document.getElementById('scan');
             const notifikasi = document.getElementById('notifikasi');

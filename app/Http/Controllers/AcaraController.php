@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Acara;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AcaraController extends Controller
 {
@@ -22,15 +23,28 @@ class AcaraController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'lokasi' => 'nullable|string|max:255',
-            // 'status'           => 'in:draft,aktif,selesai,dibatalkan',
-            // 'agenda'           => 'array',
-            // 'agenda.*.nama'    => 'required|string',
-            // 'agenda.*.jam_mulai'        => 'required|date_format:H:i',
-            // 'agenda.*.jam_selesai'      => 'required|date_format:H:i',
-            // 'agenda.*.batas_absen_masuk' => 'nullable|date_format:H:i',
         ]);
 
         Acara::create($data);
+        if ($request->wantsJson() || $request->ajax()) {
+            
+            try {
+                $acara = Acara::all();
+                $htmlTabel = view('partials.acara_partial', compact('acara'))->render();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Berhasil Menambahkan',
+                    'table' => $htmlTabel
+                ]);
+
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error PHP: '.$e->getMessage().' di baris '.$e->getLine(),
+                ], 200);
+            }
+        }
 
         return redirect()->route('acara');
     }
@@ -68,6 +82,7 @@ class AcaraController extends Controller
 
     public function delete($id)
     {
+        $id = decrypt($id);
         $acara = Acara::findOrFail($id);
         $acara->delete();
 
