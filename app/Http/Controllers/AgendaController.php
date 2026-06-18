@@ -28,7 +28,7 @@ class AgendaController extends Controller
                 ->join('divisi', 'divisi.id', '=', 'acara_user.divisi_id')
                 ->where('acara_user.acara_id', '=', $acara_id)->get();
 
-        return view('absensi.agenda', compact('agenda', 'namaacara', 'divisi'));
+        return view('absensi.agenda', compact('agenda', 'namaacara', 'divisi', 'panitia'));
 
     }
 
@@ -36,8 +36,10 @@ class AgendaController extends Controller
     {
         $agenda = Agenda::find($agenda_id);
         $absensi = DB::table('absensi')
-            ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')->where('agenda_id', '=', $agenda_id)->get();
-
+            ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')
+            ->join('acara_user', 'acara_user.user_id', '=', 'users.id')
+            ->join('divisi', 'divisi.id', '=', 'acara_user.divisi_id')
+            ->where('agenda_id', '=', $agenda_id)->get();
         return view('absensi.checkin', compact('agenda', 'absensi'));
     }
 
@@ -90,10 +92,9 @@ class AgendaController extends Controller
     {
         $nowImmutable = new DateTimeImmutable;
         $jam = $nowImmutable->format('Y-m-d H:i:s');
-
         $rfid = $request->input('rfid');
         $user = DB::table('users')->where('rfid_uid', $rfid)->first();
-
+        
         // Cek apakah user terdaftar
         if (!$user) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -105,6 +106,15 @@ class AgendaController extends Controller
             return redirect()->route('checkin', $id_agenda)->with('error', 'Kartu RFID tidak terdaftar!');
         }
 
+        $cek_panitia = DB::table('acara_user')->where('user_id', '=', $user->id)->first();
+        if(!$cek_panitia){
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Panitia tidak terdaftar di acara ini!',
+                ]);
+            }
+        }
         // 1. Simpan data baru
         Absensi::create([
             'agenda_id' => $id_agenda,
@@ -116,12 +126,14 @@ class AgendaController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             try {
-                // 1. UBAH DI SINI (hilangkan huruf 's')
                 $absensi = DB::table('absensi')
-                    ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')->where('agenda_id', '=', $id_agenda)->orderBy('waktu_masuk', 'desc')->get();
+                ->join('users', 'absensi.rfid_uid', '=', 'users.rfid_uid')
+                ->join('acara_user', 'acara_user.user_id', '=', 'users.id')
+                ->join('divisi', 'divisi.id', '=', 'acara_user.divisi_id')
+                ->where('agenda_id', '=', $id_agenda)->orderBy('waktu_masuk', 'desc')->get();
+                $agenda = DB::table('agenda')->where('id', '=', $id_agenda)->first();
 
-                // 2. UBAH JUGA DI SINI (di dalam compact)
-                $htmlTabel = view('partials.tabel_absensi', compact('absensi'))->render();
+                $htmlTabel = view('partials.tabel_absensi', compact('absensi', 'agenda'))->render();
 
                 return response()->json([
                     'success' => true,

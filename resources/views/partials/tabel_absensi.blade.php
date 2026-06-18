@@ -2,8 +2,15 @@
     <tr>
         <td>{{ $idx + 1 }}</td>
         <td>{{ $mhs->name }}</td>
+        <td>{{ $mhs->nama }}</td>
         <td>{{ $mhs->waktu_masuk }}</td>
-        <td>{{ $mhs->status }}</td>
+        <td>
+            @if (\Carbon\Carbon::parse($mhs->waktu_masuk)->greaterThan(\Carbon\Carbon::parse($agenda->batas_checkin)))
+                <span class="badge badge-orange text-xs">Terlambat</span>
+            @else
+                <span class="badge badge-green text-xs">Tepat Waktu</span>
+            @endif
+        </td>
     </tr>
 @empty
     <tr>

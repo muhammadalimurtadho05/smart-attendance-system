@@ -68,7 +68,7 @@ class DivisiController extends Controller
 
         AcaraUser::create($data);
 
-        return redirect()->route('agenda.divisi', $request->input('divisi_id'));
+        return redirect()->route('agenda.divisi', ['divisi_id' => $request->input('divisi_id')]);
 
     }
 

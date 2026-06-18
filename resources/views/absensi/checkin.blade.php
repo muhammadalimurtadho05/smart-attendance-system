@@ -59,8 +59,9 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th>No</th>
                                     <th>Mahasiswa</th>
-                                    <th>Agenda</th>
+                                    <th>Divisi</th>
                                     <th>Jam Masuk</th>
                                     <th>Status</th>
                                 </tr>
