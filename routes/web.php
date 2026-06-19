@@ -5,6 +5,7 @@ use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DivisiController;
 use App\Http\Controllers\MahasiswaController;
+use App\Http\Controllers\PDFreportingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index']);
@@ -36,3 +37,5 @@ Route::get('/checkout/{id_agenda}', [AgendaController::class, 'checkout'])->name
 Route::post('/checkout/agenda/{agenda_id}', [AgendaController::class, 'checkout_panitia'])->name('checkout.agenda');
 
 // Route::get('/laporan', [LaporanController::class, 'index']);
+// Reporting
+Route::get('/report/agenda/{agenda_id}', [PDFreportingController::class, 'generatePDF'])->name('report.agenda');
