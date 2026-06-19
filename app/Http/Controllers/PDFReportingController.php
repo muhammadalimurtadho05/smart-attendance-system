@@ -20,17 +20,37 @@ class PDFreportingController extends Controller
         $acara = Acara::find($agenda->acara_id);
         $absensi = DB::table('acara_user')
                     ->join('users', 'users.id', '=', 'acara_user.user_id')
-                    ->rightJoin('absensi', 'acara_user.user_id', '=', 'absensi.id')
+                    ->leftJoin('absensi', function ($join) use ($agenda_id) {
+                        $join->on('users.rfid_uid', '=', 'absensi.rfid_uid')
+                             ->where('absensi.agenda_id', '=', $agenda_id);
+                    })
                     ->join('divisi', 'acara_user.divisi_id', '=', 'divisi.id')
-                    ->where('absensi.agenda_id', '=',$agenda_id)
-                    ->orderBy('acara_user.divisi_id', 'asc')->get()
-                    ;
+                    ->where('acara_user.acara_id', '=', $agenda->acara_id)
+                    ->select(
+                        'users.id as user_id',
+                        'users.name as name',
+                        'divisi.nama as nama_divisi',
+                        'absensi.status',
+                        'absensi.waktu_masuk',
+                        'absensi.waktu_pulang',
+                        'absensi.keterangan'
+                    )
+                    ->orderBy('acara_user.divisi_id', 'asc')
+                    ->get();
+
+        $stats = [
+            'total' => $absensi->count(),
+            'hadir' => $absensi->whereIn('status', ['hadir', 'terlambat'])->count(),
+            'tidak_hadir' => $absensi->filter(fn($x) => is_null($x->status) || $x->status === 'tidak_hadir')->count(),
+            'izin' => $absensi->where('status', 'izin')->count(),
+        ];
 
         $data = [
-            'title' => 'Daftar Absensi',
+            'title' => 'Laporan Absensi - ' . $agenda->nama,
             'agenda' => $agenda->nama, 
             'acara' => $acara->nama, 
             'absensi' => $absensi,
+            'stats' => $stats,
             'date' => date('d-m-Y H:i:s'),
         ];
         
