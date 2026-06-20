@@ -29,6 +29,8 @@ class PDFreportingController extends Controller
                     ->select(
                         'users.id as user_id',
                         'users.name as name',
+                        'users.rfid_uid as rfid_uid',
+                        'users.email as email',
                         'divisi.nama as nama_divisi',
                         'absensi.status',
                         'absensi.waktu_masuk',
