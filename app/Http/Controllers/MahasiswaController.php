@@ -40,21 +40,18 @@ class MahasiswaController extends Controller
             ->with('success', 'Mahasiswa berhasil ditambahkan.');
     }
 
-    public function update(Request $request, User $mahasiswa)
+    public function update(Request $request, $id)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => "required|email|unique:users,email,{$mahasiswa->id}",
-            'rfid_uid' => "required|string|unique:users,rfid_uid,{$mahasiswa->id}",
-            'photo' => 'nullable|image|max:2048',
+            'email' => 'required|email',
+        ]);
+        $completed_payload = array_merge($data, [
+            'is_active' => $request->input('status')
         ]);
 
-        if ($request->hasFile('photo')) {
-            $data['photo'] = $request->file('photo')->store('photos', 'public');
-        }
-
-        $mahasiswa->update($data);
-
+        $mhs = User::findOrFail($id);
+        $mhs->update($completed_payload);
         return redirect()->route('mahasiswa.index')
             ->with('success', 'Data mahasiswa diperbarui.');
     }

@@ -88,7 +88,6 @@ class AgendaController extends Controller
 
         ]);
 
-        // echo $completed_payload['checkin'];
         Agenda::create($completed_payload);
 
         return redirect()->route('acara.agenda', ['acara_id' => encrypt($request->input('acara_id'))]);

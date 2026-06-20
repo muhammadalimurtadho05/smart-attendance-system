@@ -71,7 +71,7 @@
                 <div>
                     <h2 class="font-display font-800 text-slate-900 text-xl">Tambah Panitia</h2>
                     <p class="text-red-500 text-sm mt-0.5">Hanya bisa menambahkan panitia jika panitia yang ingin
-                        ditambahkan belum terdaftar di acara ini</p>
+                        ditambahkan belum terdaftar di acara ini dan akun sedang aktif</p>
                 </div>
                 <button onclick="closeModal(null,'modal-tambah-mahasiswa')"
                     class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition">

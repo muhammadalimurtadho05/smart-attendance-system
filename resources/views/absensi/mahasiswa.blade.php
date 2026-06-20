@@ -140,7 +140,7 @@
                     ✕
                 </button>
             </div>
-            <form action="" method="POST">
+            <form action="" method="POST" id="form-edit-mahasiswa">
                 <div
                     class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 mb-5 text-center relative overflow-hidden">
                     <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
@@ -232,8 +232,9 @@
 
         // Edit
         function showEditModal(id, nama, rfid, email, status) {
-            // document.getElementById('form-edit-agenda').action = `/agenda/update/${id}`
+            document.getElementById('form-edit-mahasiswa').action = `/mahasiswa/update/${id}`
             document.getElementById('rfid').innerHTML = rfid;
+            console.log(document.getElementById('form-edit-mahasiswa').action)
             document.getElementById('nama').value = nama;
             document.getElementById('email').value = email;
             document.getElementById(status).setAttribute('selected', '')  ;

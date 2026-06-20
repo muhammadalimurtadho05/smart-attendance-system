@@ -49,7 +49,9 @@ class DivisiController extends Controller
         $acara = Acara::find($divisi->acara_id);
         $panitia_available = DB::table('users')->whereNotIn('id', function ($query) use ($acara) {
             $query->select('user_id')->from('acara_user')->where('acara_id', '=', $acara->id);
-        })->get();
+        })
+        ->where('users.is_active', '=', '1')
+        ->get();
         $panitia = DB::table('acara_user')
             ->join('users', 'acara_user.user_id', '=', 'users.id')
             ->where('acara_user.divisi_id', '=', $divisi_id)->get();
