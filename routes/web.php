@@ -31,6 +31,8 @@ Route::get('/acara/delete/{id}', [AcaraController::class, 'delete'])->name('acar
 
 Route::get('/acara/agenda/{acara_id}', [AgendaController::class, 'index'])->name('acara.agenda');
 Route::get('acara/agenda/divisi/{divisi_id}', [DivisiController::class, 'divisiAgenda'])->name('agenda.divisi');
+Route::get('agenda/absensi/{agenda_id}', [AgendaController::class, 'daftarAbsensi'])->name('agenda.absensi');
+Route::post('agenda/absensi/update', [AgendaController::class, 'updateAbsensi'])->name('agenda.absensi.update');
 
 Route::get('/checkin/{id_agenda}', [AgendaController::class, 'checkin'])->name('checkin');
 Route::post('/checkin/agenda/{agenda_id}', [AgendaController::class, 'checkin_panitia'])->name('checkin.agenda');

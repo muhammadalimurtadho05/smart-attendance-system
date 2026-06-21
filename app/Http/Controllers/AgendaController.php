@@ -281,4 +281,95 @@ class AgendaController extends Controller
     {
         //
     }
+
+    public function daftarAbsensi($agenda_id){
+        $agenda_id = decrypt($agenda_id);
+        $agenda = Agenda::find($agenda_id);
+        $acara = Acara::find($agenda->acara_id);
+        $absensi = DB::table('acara_user')
+                    ->join('users', 'users.id', '=', 'acara_user.user_id')
+                    ->leftJoin('absensi', function ($join) use ($agenda_id) {
+                        $join->on('users.rfid_uid', '=', 'absensi.rfid_uid')
+                             ->where('absensi.agenda_id', '=', $agenda_id);
+                    })
+                    ->join('divisi', 'acara_user.divisi_id', '=', 'divisi.id')
+                    ->where('acara_user.acara_id', '=', $agenda->acara_id)
+                    ->select(
+                        'users.id as user_id',
+                        'users.name as name',
+                        'users.rfid_uid as rfid_uid',
+                        'users.email as email',
+                        'divisi.nama as nama_divisi',
+                        'absensi.status',
+                        'absensi.waktu_masuk',
+                        'absensi.waktu_pulang',
+                        'absensi.keterangan'
+                    )
+                    ->orderBy('acara_user.divisi_id', 'asc')
+                    ->get();
+
+        $stats = [
+            'total' => $absensi->count(),
+            'hadir' => $absensi->whereIn('status', ['hadir', 'terlambat'])->count(),
+            'tidak_hadir' => $absensi->filter(fn($x) => is_null($x->status) || $x->status === 'tidak_hadir')->count(),
+            'izin' => $absensi->where('status', 'izin')->count(),
+        ];
+
+        $data = [
+            'title' => 'Laporan Absensi - ' . $agenda->nama,
+            'agenda' => $agenda->nama, 
+            'acara' => $acara->nama, 
+            'absensi' => $absensi,
+            'stats' => $stats,
+            'date' => date('d-m-Y H:i:s'),
+        ];
+        
+        return view('absensi.absensi', compact('absensi', 'acara', 'agenda', 'stats'));
+    }
+
+    public function updateAbsensi(Request $request)
+    {
+        $request->validate([
+            'agenda_id' => 'required|exists:agenda,id',
+            'rfid_uid' => 'required|string',
+            'status' => 'required|in:hadir,terlambat,izin,tidak_hadir',
+            'waktu_masuk' => 'nullable|string',
+            'waktu_pulang' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $agenda = Agenda::findOrFail($request->agenda_id);
+        $dateStr = $agenda->checkin ? $agenda->checkin->format('Y-m-d') : now()->format('Y-m-d');
+
+        $waktu_masuk = null;
+        if ($request->status === 'hadir' || $request->status === 'terlambat') {
+            if ($request->waktu_masuk) {
+                $waktu_masuk = $dateStr . ' ' . $request->waktu_masuk . ':00';
+            } else {
+                $waktu_masuk = now()->format('Y-m-d H:i:s');
+            }
+        }
+
+        $waktu_pulang = null;
+        if ($request->status === 'hadir' || $request->status === 'terlambat') {
+            if ($request->waktu_pulang) {
+                $waktu_pulang = $dateStr . ' ' . $request->waktu_pulang . ':00';
+            }
+        }
+
+        Absensi::updateOrCreate(
+            [
+                'agenda_id' => $request->agenda_id,
+                'rfid_uid' => $request->rfid_uid,
+            ],
+            [
+                'waktu_masuk' => $waktu_masuk,
+                'waktu_pulang' => $waktu_pulang,
+                'status' => $request->status,
+                'keterangan' => $request->keterangan ?? '-',
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Kehadiran berhasil diperbarui!');
+    }
 }
