@@ -48,7 +48,7 @@ class PDFreportingController extends Controller
         ];
 
         $data = [
-            'title' => 'Laporan Absensi - ' . $agenda->nama,
+            'title' => 'Laporan Absensi | ' . $acara->nama.' - '. $agenda->nama,
             'agenda' => $agenda->nama, 
             'acara' => $acara->nama, 
             'absensi' => $absensi,
@@ -56,6 +56,7 @@ class PDFreportingController extends Controller
             'date' => date('d-m-Y H:i:s'),
         ];
         
+        $fileName = $acara->nama.' - '.$agenda->nama.'.pdf';
         // Load the blade view and pass data
         $pdf = Pdf::loadView('report.absensi', $data);
         
@@ -63,9 +64,9 @@ class PDFreportingController extends Controller
         $pdf->setPaper('A4', 'landscape');
 
         // Stream the PDF directly in the browser
-        return $pdf->stream('document.pdf');
+        // return $pdf->stream('document.pdf');
         
         // OR: Force a file download instead
-        // return $pdf->download('invoice.pdf');
+        return $pdf->download($fileName);
     }
 }

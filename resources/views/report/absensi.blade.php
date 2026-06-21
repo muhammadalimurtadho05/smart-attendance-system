@@ -185,7 +185,7 @@
 
     <div class="header">
         <div>
-            <p class="org-label">Himpunan Mahasiswa Informatika &middot; HIMATIF</p>
+            <p class="org-label">Himpunan Mahasiswa Teknik Informatika &middot; HIMATIF</p>
             <h1 class="doc-title">Laporan Kehadiran</h1>
         </div>
         <div style="text-align:right; font-size:10px; color:#64748B;">
@@ -251,7 +251,7 @@
     </table>
 
     <div class="footer">
-        <span>Smart Attendance System</span> - HIMATIF &bull; Digenerate otomatis
+        Dokumen ini digenerate otomatis dari <span><i> Smart Attendance System</i></span> | Departemen Riset dan Teknologi - HIMATIF 2026
     </div>
 
 </body>
