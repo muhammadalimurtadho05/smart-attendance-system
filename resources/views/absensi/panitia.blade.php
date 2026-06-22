@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('page_title', 'Daftar Panitia')
+@section('page_subtitle', 'Manajemen panitia divisi')
 @section('main-content')
     <div id="page-mahasiswa" class="page active">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">

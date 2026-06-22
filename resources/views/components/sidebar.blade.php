@@ -41,26 +41,6 @@
             <span class="nav-label">Acara & Agenda</span>
         </a>
 
-        <a class="nav-item {{ request()->is('absensi*') ? 'active' : '' }}" href="/absensi">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            <span class="nav-label">Absensi</span>
-        </a>
-
-        <div
-            class="sidebar-section-title text-xs font-display font-600 text-slate-400 uppercase tracking-widest mb-2 px-2 mt-5 transition-all duration-300">
-            Laporan
-        </div>
-
-        <a class="nav-item {{ request()->is('laporan*') ? 'active' : '' }}" href="/laporan">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span class="nav-label">Laporan & Cetak</span>
-        </a>
     </nav>
 
     <div class="p-3 border-t border-slate-200">

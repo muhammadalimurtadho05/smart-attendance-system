@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('page_title', 'Dashboard')
+@section('page_subtitle', 'Ringkasan sistem absensi')
 @section('main-content')
     <div id="page-dashboard" class="page active">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

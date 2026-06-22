@@ -8,8 +8,8 @@
             </svg>
         </button>
         <div>
-            <h1 id="page-title" class="font-display text-slate-900 font-700 text-lg leading-none">Dashboard</h1>
-            <p id="page-sub" class="text-slate-500 text-xs mt-0.5">Ringkasan sistem absensi</p>
+            <h1 id="page-title" class="font-display text-slate-900 font-700 text-lg leading-none">@yield('page_title', 'Dashboard')</h1>
+            <p id="page-sub" class="text-slate-500 text-xs mt-0.5">@yield('page_subtitle', 'Ringkasan sistem absensi')</p>
         </div>
     </div>
 

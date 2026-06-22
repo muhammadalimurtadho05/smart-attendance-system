@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('page_title', 'Absensi')
+@section('page_subtitle', 'Proses absensi dengan RFID')
 @section('main-content')
 @php
 $divisiList = $absensi->pluck('nama_divisi')->unique()->filter()->values();

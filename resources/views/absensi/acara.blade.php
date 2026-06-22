@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('page_title', 'Acara & Agenda')
+@section('page_subtitle', 'Kelola acara dan agenda')
 @section('main-content')
     <div id="page-acara" class="page active">
         <div class="flex items-center justify-between mb-6">

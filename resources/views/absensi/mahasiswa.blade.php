@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('page_title', 'Daftar Mahasiswa')
+@section('page_subtitle', 'Manajemen data mahasiswa')
 @section('main-content')
     <div id="page-mahasiswa" class="page active">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -238,12 +240,6 @@
             document.getElementById('nama').value = nama;
             document.getElementById('email').value = email;
             document.getElementById(status).setAttribute('selected', '')  ;
-            // console.log(status)
-            // console.log()
-            // document.getElementById('edit-agenda-checkin').value = checkin || '-';
-            // document.getElementById('edit-agenda-batas-checkin').value = batasCheckin || '-';
-            // document.getElementById('edit-agenda-checkout').value = checkout || '-';
-            // document.getElementById('edit-agenda-batas-checkout').value = batasCheckout || '-';
 
             showModal('modal-edit-panitia');
         }

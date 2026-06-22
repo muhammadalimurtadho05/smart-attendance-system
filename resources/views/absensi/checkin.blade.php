@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('page_title', 'Check-in Absensi')
+@section('page_subtitle', 'Proses check-in dengan RFID')
 @section('main-content')
     <div id="page-absensi" class="page active">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -101,7 +103,7 @@
                 const timeDifference = currentTime - lastKeyTime;
 
                 if (timeDifference > 50 && e.key !== 'Enter') {
-                    inputScan.value = ''; // Kosongkan input seketika
+                    inputScan.value = '';
                 }
                 lastKeyTime = currentTime;
             });
@@ -123,7 +125,7 @@
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': csrfToken,
                             'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest' // Memastikan Laravel mendeteksi request sebagai AJAX
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify({
                             rfid: rfidValue
